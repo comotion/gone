@@ -1,6 +1,6 @@
 #!/bin/sh
 # yes the shell
-# Kacper Wysocki, comotion@krutt.org
+# 2010-08-31 Kacper Wysocki <comotion@krutt.org> Initial version
 # 
 # bottom up is better than top down
 # 
@@ -10,30 +10,29 @@
 fqdn=`hostname -f`
 host=`hostname`
 
+# hostname, $fqdn or other specifics are kept in branches
+git checkout $host
+git checkout $fqdn
+# weakness: one machine may have many roles, not in this scheme though
+# edit: keep separate repos for each role... 
+
 # substitute installed copies for version controlled ones
+workdir=$PWD
 cd files/
-for file in `find . -type f`
+for file in `find . -type f | sed 's/^.\///'`
 do
-	file=`echo $from | sed 's/^files\///'`
-	if [ -r "files/$fqdn/$from" ]
+	if diff -bud $file /$file || [ $? = 2 ]
 	then
-		from="files/$fqdn"
-	elif [ -r "$from.$host" ]
-	then
-		from="$from.$host"
-	fi
-	if diff -bud $from /$file || [ $? = 2 ]
-	then
-		echo "$from doesn't match local copy, [a]pply, commit or SKIP?"
+		echo "$file doesn't match local copy, [a]pply, commit or SKIP?"
 		# or commit the change
 		read choose
 		case $choose in
 			[aA])
-			cp -v $from /$file
+			cp -v $file /$file
 			;;
 
 			commit)
-			cp -v /$file $from
+			cp -v /$file $file
 			git diff $file
 			git add $file
 			git commit
@@ -44,3 +43,7 @@ do
 		esac
 	fi
 done
+cd $workdir
+
+# kick the script - basically what chef, slaughter and puppet does
+. defaults
