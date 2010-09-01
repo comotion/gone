@@ -46,4 +46,6 @@ done
 cd $workdir
 
 # kick the script - basically what chef, slaughter and puppet does
-. defaults
+. $workdir/defaults
+# dash doesn't like it when we source relative scripts :-(
+

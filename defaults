@@ -6,3 +6,5 @@
 #
 # run the defaults as well as host specific code
 
+echo "the default is never good enough"
+
