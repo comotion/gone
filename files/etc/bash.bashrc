@@ -1,8 +1,9 @@
 # Custom system-wide bashrc for interactive shells.
-#[ -f /etc/bash.bashrc ] && . /etc/bash.bashrc
 
-[ -f /etc/profile ] && . /etc/profile
-[ -f ~/.profile ] && . ~/.profile
+# these get run anyway on sane systems
+#[ -f /etc/bash.bashrc ] && . /etc/bash.bashrc
+#[ -f /etc/profile ] && . /etc/profile
+#[ -f ~/.profile ] && . ~/.profile
 
 [ -z "$PS1" ] && return
 
