@@ -1,0 +1,24 @@
+=============================
+gone configuration management
+=============================
+basic idea: 
+ - rsync + shell script + git. 
+
+ bash script with case $HOSTNAME and *) do defaults
+ # apply default conf to all services
+ git clone repo/conf; cd conf; ./apply
+ 
+ ( sort of  puppet apply / slaughter applypolicy )
+ " client pull + server push "
+ decentralised: any node is a conf node
+ server may push: set up a git pull ; ./apply cron job
+ master node := temporary central git repo
+ apply runs defaults + host specifics
+
+advantages: decentralized, requires git only (no client, no server)
+ # store documents in private repo
+ # store code in (semipublic) repo group
+ # store conf in public repo
+
+# hook reload actions on push events with diffs!
+
