@@ -1,0 +1,8 @@
+#!/bin/sh
+# yes the shell
+# 2010-08-31 Kacper Wysocki <comotion@krutt.org> Initial version
+# 
+# bottom up is better than top down
+#
+# run the defaults as well as host specific code
+
