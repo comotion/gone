@@ -7,4 +7,10 @@
 # run the defaults as well as host specific code
 
 echo "the default is never good enough"
-
+echo " first: ossim munin nagios"
+echo " then: logwatch rkhunter rootmail firewall"
+echo " esoteric: kexec lowpower prads and cronpull"
+echo " crucial: mail web php cache proxy dns"
+echo " optional: integrate with slaughter, chef, puppet"
+echo "distributed shell nodes"
+echo " advanced: grsecurity, chrooted services, snort"

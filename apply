@@ -11,20 +11,23 @@ fqdn=`hostname -f`
 host=`hostname`
 
 # hostname, $fqdn or other specifics are kept in branches
-git checkout $host
-git checkout $fqdn
+git checkout $host 2>/dev/null
+git checkout $fqdn 2>/dev/null
+
+git branch
 # weakness: one machine may have many roles, not in this scheme though
-# edit: keep separate repos for each role... 
+# edit: keep separate repos for each role...
+# or keep the same files and figure out a way to do multiple inheritance
 
 # substitute installed copies for version controlled ones
 workdir=$PWD
 cd files/
 for file in `find . -type f | sed 's/^.\///'`
 do
-	if diff -bud $file /$file || [ $? = 2 ]
+    echo $file
+	if ! diff -bud /$file $file || [ $? = 2 ]
 	then
 		echo "$file doesn't match local copy, [a]pply, commit or SKIP?"
-		# or commit the change
 		read choose
 		case $choose in
 			[aA])
@@ -38,8 +41,8 @@ do
 			git commit
 			;;
 			
-                        # skip
 			*)
+            # skip
 		esac
 	fi
 done
