@@ -12,7 +12,16 @@ fi
 cd lowpower
 git pull
 
+# usually can't measure battery when on AC power
+HAVE_BATT=0
+BATT=/proc/acpi/battery/BAT0/state
+if [ -f $BATT ] && grep '^charging state: *dis' $BATT
+then
+   HAVE_BATT=1
+   grep '^present rate:' $BATT
+fi
 ./lowpower >/dev/null 2>lowpower_debug.log
+[ $HAVE_BATT = 1 ] && grep '^present rate:' $BATT && echo "this is a one-minute average, check $BATT soon"
 
 # make sure we don't install twice
 if ! grep lowpower /etc/rc.local
