@@ -1,0 +1,22 @@
+#!/bin/sh
+# grab and install kwy's lowpower script
+# to conserve power
+
+mkdir -p inst
+cd inst
+if [ ! -d lowpower/.git ]
+then
+   git clone git://github.com/comotion/lowpower.git
+fi
+
+cd lowpower
+git pull
+
+./lowpower >/dev/null 2>lowpower_debug.log
+
+# make sure we don't install twice
+if ! grep lowpower /etc/rc.local
+then
+   sed -ie "/^exit 0/ { s#exit 0#$PWD/lowpower# }" /etc/rc.local
+fi
+
