@@ -14,8 +14,8 @@ doscript() {
 }
 
 echo "the default is never good enough"
-doscript lowpower
 
+doscript lowpower
 doscript ubuntu
 
 echo " first: ossim munin nagios"
