@@ -19,6 +19,7 @@ doscript lowpower
 doscript ubuntu
 
 echo " first: ossim munin nagios"
+echo "multilog gitorius gitolite"
 echo " then: logwatch rkhunter rootmail firewall"
 echo " esoteric: kexec lowpower prads and cronpull"
 echo " crucial: mail web php cache proxy dns"
