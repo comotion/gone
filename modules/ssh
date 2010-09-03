@@ -1,0 +1,22 @@
+#!/bin/sh
+#
+# try to secure OpenSSH... a bit
+#
+# comotion@krutt.org
+
+sed -i \
+-e 's/PermitRootLogin *yes.*/PermitRootLogin no/' \
+-e 's/UsePrivilegeSeparation *no.*/UsePrivilegeSeparation yes/' \
+-e 's/StrictModes *no.*/StrictModes yes/' \
+-e 's/IgnoreRhosts *no.*/IgnoreRhosts yes/' \
+-e 's/PermitEmptyPasswords *yes.*/PermitEmptyPasswords no/' \
+/etc/ssh/sshd_config
+
+/etc/init.d/ssh reload
+
+# controversial options:
+# X11Forwarding
+# AllowTCPForwarding
+# AllowUsers
+# AllowGroups
+# ChrootDirectory

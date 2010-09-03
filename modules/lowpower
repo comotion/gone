@@ -1,6 +1,7 @@
 #!/bin/sh
 # grab and install kwy's lowpower script
 # to conserve power
+# comotion@krutt.org
 
 mkdir -p inst
 cd inst
