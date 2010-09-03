@@ -2,13 +2,18 @@
 gone configuration management
 =============================
 basic idea: 
- - rsync + shell script + git. 
+ - shell scripts + git. 
+
+Puppet exists. Chef exists. CFEngine exists. Slaughter exists.
+However:
+I want to depend on nothing but git. 
+I want to decentralise the "master".
+I want my scripts to be standalone.
 
  bash script with case $HOSTNAME and *) do defaults
  # apply default conf to all services
- git clone repo/conf; cd conf; ./apply
+ git clone git://github.com/comotion/gone.git; cd gone; ./apply
  
- ( sort of  puppet apply / slaughter applypolicy )
  " client pull + server push "
  decentralised: any node is a conf node
  server may push: set up a git pull ; ./apply cron job
@@ -22,3 +27,21 @@ advantages: decentralized, requires git only (no client, no server)
 
 # hook reload actions on push events with diffs!
 
+QUICK START
+===========
+
+git clone git://github.com:comotion/gone.git
+find files       # check what files get overwritten
+cat defaults     # check what scripts get run
+./apply          # apply the configuration on this host.
+
+Now you can use your cloned repo as a master for other repos via git + ssh.
+
+TODO / TO THINK ABOUT
+=====================
+
+Idempotence. "do $foo only when $bar got updated"
+libs for:
+    package installation on any distro
+    service initscript installation
+    checking configuration
