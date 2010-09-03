@@ -6,7 +6,18 @@
 #
 # run the defaults as well as host specific code
 
+doscript() {
+   script=$1
+   shift
+   echo "execing $script"
+   modules/$script $@
+}
+
 echo "the default is never good enough"
+doscript lowpower
+
+doscript ubuntu
+
 echo " first: ossim munin nagios"
 echo " then: logwatch rkhunter rootmail firewall"
 echo " esoteric: kexec lowpower prads and cronpull"

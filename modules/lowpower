@@ -1,0 +1,32 @@
+#!/bin/sh
+# grab and install kwy's lowpower script
+# to conserve power
+# comotion@krutt.org
+
+mkdir -p inst
+cd inst
+if [ ! -d lowpower/.git ]
+then
+   git clone git://github.com/comotion/lowpower.git
+fi
+
+cd lowpower
+git pull
+
+# usually can't measure battery when on AC power
+HAVE_BATT=0
+BATT=/proc/acpi/battery/BAT0/state
+if [ -f $BATT ] && grep '^charging state: *dis' $BATT
+then
+   HAVE_BATT=1
+   grep '^present rate:' $BATT
+fi
+./lowpower >/dev/null 2>lowpower_debug.log
+[ $HAVE_BATT = 1 ] && grep '^present rate:' $BATT && echo "this is a one-minute average, check $BATT soon"
+
+# make sure we don't install twice
+if ! grep lowpower /etc/rc.local
+then
+   sed -ie "/^exit 0/ { s#exit 0#$PWD/lowpower# }" /etc/rc.local
+fi
+
