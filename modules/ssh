@@ -20,3 +20,5 @@ sed -i \
 # AllowUsers
 # AllowGroups
 # ChrootDirectory
+#
+# Define a remote group and use it for allowed users.
