@@ -16,6 +16,8 @@ doscript() {
 echo "the default is never good enough"
 doscript lowpower
 
+doscript ubuntu
+
 echo " first: ossim munin nagios"
 echo " then: logwatch rkhunter rootmail firewall"
 echo " esoteric: kexec lowpower prads and cronpull"

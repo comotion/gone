@@ -1,0 +1,7 @@
+#!/bin/sh
+#
+# remove ubuntu braindeadness
+# comotion@krutt.org
+
+f=/etc/update-motd.d/10-help-text
+[ -f $f ] && rm $f
