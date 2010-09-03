@@ -77,7 +77,7 @@ set guioptions+=c               " Use console dialogs
 set guioptions-=T               " Don't show the toolbar
 set mouseshape+=n:beam,v:beam   " Use beam in normal mode, too
 set display+=lastline           " A nicer way to show long wrapped lines
-set list                        " Display list chars by default
+set nolist                        " Display list chars by default
 "set number                      " Display line number by default
 " set foldenable                  " Display folds by default
 " set foldcolumn=8                " Use 8 column folds

@@ -1,0 +1,51 @@
+#!/bin/sh -x
+#
+# Build a chroot for $task
+#
+# comotion@krutt.org
+
+# numeric
+TASK=${1:-build}
+CHROOTUSER=${CHROOTUSER:-$TASK}
+CHROOTUID=${CHROOTUID:-616}
+CHROOTDIR=${CHROOTDIR:-/var/lib/chroot/${TASK}}
+CHROOTDIST=${CHROOTDIST:-squeeze}
+MIRROR=${MIRROR:-http://ftp.no.debian.org/debian}
+
+mkdir -p $CHROOTDIR
+
+apt-get install debootstrap --yes
+debootstrap $CHROOTDIST $CHROOTDIR $MIRROR >/dev/null
+chmod 700 `dirname $CHROOTDIR`
+
+if [ -z "$CHROOTUSER" ]
+then
+   echo "chroot without user" >&2
+   exit 1
+fi
+    
+# create chroot account (optional)
+groupadd -g $CHROOTUID $CHROOTUSER
+useradd -g $CHROOTUID -u $CHROOTUID $CHROOTUSER
+if [ ! -d /home/$CHROOTUSER ]
+then
+    cp -a /etc/skel /home/$CHROOTUSER
+    chown -R $CHROOTUID:$CHROOTUID /home/$CHROOTUSER
+fi
+
+# create chroot
+mkdir -p $CHROOTDIR/home/$CHROOTUSER
+bindcmd="mount -o bind /home/$CHROOTUSER $CHROOTDIR/home/$CHROOTUSER"
+echo $bindcmd >> /etc/rc.local
+$bindcmd
+
+# add shell access to chroot
+cat >> /etc/ssh/sshd_config << EOF
+Match User $CHROOTUSER
+   ChrootDirectory $CHROOTDIR
+   AllowTCPForwarding no
+   X11Forwarding no
+
+EOF
+
+
