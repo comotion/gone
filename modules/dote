@@ -1,0 +1,29 @@
+#!/bin/sh
+#
+# Set up Defender of the Internet
+# .. a firewall must always be adjusted your needs
+# so you should clone dote at github and point this
+# script towards your own, modified firewall
+#
+# comotion@krutt.org
+
+PKG=dote
+REPO=git@github.com:comotion/$PKG.git
+
+mkdir -p inst
+cd inst
+if [ ! -d $PKG/.git ]
+then
+   git clone $REPO
+fi
+
+# install into /etc
+ln -fs $PWD/dote /etc/
+
+cd $PKG
+git pull
+
+./install.sh
+# kick dote at once
+/etc/init.d/dote restart
+

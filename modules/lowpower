@@ -3,14 +3,17 @@
 # to conserve power
 # comotion@krutt.org
 
+PKG=lowpower
+REPO=git@github.com:comotion/$PKG.git
+
 mkdir -p inst
 cd inst
-if [ ! -d lowpower/.git ]
+if [ ! -d $PKG/.git ]
 then
-   git clone git://github.com/comotion/lowpower.git
+   git clone $REPO
 fi
 
-cd lowpower
+cd $PKG
 git pull
 
 # usually can't measure battery when on AC power
