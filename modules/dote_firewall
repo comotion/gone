@@ -8,7 +8,7 @@
 # comotion@krutt.org
 
 PKG=dote
-REPO=git@github.com:comotion/$PKG.git
+REPO=git://github.com/comotion/$PKG.git
 
 mkdir -p inst
 cd inst
