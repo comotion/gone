@@ -1,0 +1,37 @@
+#!/bin/sh -x
+#
+#
+# www.ossec.net
+# unfortunately lacks debian packaging.
+# get it up and running as a controlling thing
+
+# server, agent, local
+USER_INSTALL_TYPE=${1:-agent}
+#USER_AGENT_SERVER_IP=
+#USER_EMAIL_ADDRESS=
+USER_EMAIL_SMTP=localhost
+
+USER_DIR=/var/ossec
+USER_LANGUAGE=en
+#USER_BINARYINSTALL=yes
+USER_ENABLE_EMAIL=yes
+USER_ENABLE_SYSLOG=yes
+USER_ENABLE_SYSCHECK=yes
+USER_ENABLE_ROOTCHECK=yes
+USER_ENABLE_ACTIVE_RESPONSE=yes
+USER_NO_STOP=yes
+USER_UPDATE_RULES=yes
+
+apt-get install build-essential
+
+mkdir -p inst
+cd inst
+wget -c http://www.ossec.net/files/ossec-hids-latest.tar.gz
+wget http://www.ossec.net/files/ossec-hids-latest_sum.txt -qO - | grep 'SHA1.*gz' | sed 's/hids.*tar.gz/hids-latest.tar.gz/' > latest_sum
+sha1sum -c latest_sum || exit 0
+
+tar xvf ossec-hids-latest.tar.gz
+cd ossec-hids-*
+./install.sh
+
+
