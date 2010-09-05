@@ -28,11 +28,11 @@ doscript ubuntu
 doscript dote_firewall $spec
 doscript ossec $spec
 
-echo " first: munin nagios snort"
+echo " first: munin nagios "
 echo "multilog gitorius gitolite"
 echo " then: logwatch rkhunter rootmail firewall"
-echo " esoteric: kexec lowpower prads and cronpull"
+echo " esoteric: kexec prads and cronpull"
 echo " crucial: mail web php cache proxy dns"
 echo " optional: integrate with slaughter, chef, puppet"
 echo "distributed shell nodes"
-echo " advanced: grsecurity, chrooted services, snort"
+echo " advanced: grsecurity, chrooted services, snort, prey"
