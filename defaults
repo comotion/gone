@@ -28,7 +28,7 @@ doscript ubuntu
 doscript dote_firewall $spec
 doscript ossec $spec
 
-echo " first: ossim munin nagios"
+echo " first: munin nagios snort"
 echo "multilog gitorius gitolite"
 echo " then: logwatch rkhunter rootmail firewall"
 echo " esoteric: kexec lowpower prads and cronpull"
