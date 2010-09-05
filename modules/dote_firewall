@@ -7,6 +7,7 @@
 #
 # comotion@krutt.org
 
+BRANCH=${1:-master}
 PKG=dote
 REPO=git://github.com/comotion/$PKG.git
 
@@ -21,9 +22,11 @@ fi
 ln -fs $PWD/dote /etc/
 
 cd $PKG
+git checkout $BRANCH
 git pull
 
 ./install.sh
+
 # kick dote at once
 /etc/init.d/dote restart
 
