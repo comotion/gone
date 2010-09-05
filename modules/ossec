@@ -4,6 +4,8 @@
 # www.ossec.net
 # unfortunately lacks debian packaging.
 # get it up and running as a controlling thing
+# 
+# idempotent script!
 
 # server, agent, local
 USER_INSTALL_TYPE=${1:-agent}
@@ -24,11 +26,21 @@ USER_UPDATE_RULES=yes
 
 apt-get install build-essential
 
+SOURCE=http://www.ossec.net/files
+PKG=ossec-hids-latest
 mkdir -p inst
 cd inst
-wget -c http://www.ossec.net/files/ossec-hids-latest.tar.gz
-wget http://www.ossec.net/files/ossec-hids-latest_sum.txt -qO - | grep 'SHA1.*gz' | sed 's/hids.*tar.gz/hids-latest.tar.gz/' > latest_sum
-sha1sum -c latest_sum || exit 0
+wget $SOURCE/${PKG}_sum.txt -qO - | grep 'SHA1.*gz' | sed 's/hids.*tar.gz/hids-latest.tar.gz/' > ossec-hids-latest_sum.txt
+if [ -f ossec-hids-sum.txt ] && diff -q ossec-hids-sum.txt ossec-hids-latest_sum.txt
+then
+   echo ossec already installed
+   exit 0
+else
+   cp ossec-hids-latest_sum.txt ossec-hids-sum.txt
+fi
+
+wget -c $SOURCE/${PKG}.tar.gz
+sha1sum -c ossec-hids-sum.txt || exit 0
 
 tar xvf ossec-hids-latest.tar.gz
 cd ossec-hids-*

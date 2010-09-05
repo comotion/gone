@@ -3,10 +3,10 @@ set nomodeline
 set cursorcolumn
 set cursorline
 set backspace=eol,indent,start
-set tabstop=4
+set tabstop=3
 set background=dark
 set t_Co=16
-set shiftwidth=4
+set shiftwidth=3
 set ruler
 set smartindent
 set autoindent
@@ -77,7 +77,7 @@ set guioptions+=c               " Use console dialogs
 set guioptions-=T               " Don't show the toolbar
 set mouseshape+=n:beam,v:beam   " Use beam in normal mode, too
 set display+=lastline           " A nicer way to show long wrapped lines
-set list                        " Display list chars by default
+set nolist                        " Display list chars by default
 "set number                      " Display line number by default
 " set foldenable                  " Display folds by default
 " set foldcolumn=8                " Use 8 column folds
