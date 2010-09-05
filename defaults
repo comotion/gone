@@ -13,6 +13,14 @@ doscript() {
    modules/$script $@
 }
 
+case `hostname -f` in
+	kwy.u*)
+          spec=server
+          ;;
+        *)
+          spec=
+esac
+
 echo "the default is never good enough"
 
 doscript lowpower
