@@ -17,6 +17,7 @@ echo "the default is never good enough"
 
 doscript lowpower
 doscript ubuntu
+doscript dote_firewall
 
 echo " first: ossim munin nagios"
 echo "multilog gitorius gitolite"
