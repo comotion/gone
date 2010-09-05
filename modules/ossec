@@ -1,4 +1,4 @@
-#!/bin/sh -x
+#!/bin/sh
 #
 #
 # www.ossec.net
@@ -14,8 +14,9 @@ USER_INSTALL_TYPE=${1:-agent}
 USER_EMAIL_SMTP=localhost
 
 USER_DIR=/var/ossec
+USER_UPDATE=yes
 USER_LANGUAGE=en
-#USER_BINARYINSTALL=yes
+USER_BINARYINSTALL=yes
 USER_ENABLE_EMAIL=yes
 USER_ENABLE_SYSLOG=yes
 USER_ENABLE_SYSCHECK=yes
@@ -28,22 +29,29 @@ apt-get install build-essential
 
 SOURCE=http://www.ossec.net/files
 PKG=ossec-hids-latest
+workdir=$PWD
+
 mkdir -p inst
 cd inst
 wget $SOURCE/${PKG}_sum.txt -qO - | grep 'SHA1.*gz' | sed 's/hids.*tar.gz/hids-latest.tar.gz/' > ossec-hids-latest_sum.txt
 if [ -f ossec-hids-sum.txt ] && diff -q ossec-hids-sum.txt ossec-hids-latest_sum.txt
 then
    echo ossec already installed
-   exit 0
+#   exit 0
 else
    cp ossec-hids-latest_sum.txt ossec-hids-sum.txt
+   wget -c $SOURCE/${PKG}.tar.gz
+   sha1sum -c ossec-hids-sum.txt || exit 0
+   tar xvf ossec-hids-latest.tar.gz
 fi
 
-wget -c $SOURCE/${PKG}.tar.gz
-sha1sum -c ossec-hids-sum.txt || exit 0
 
-tar xvf ossec-hids-latest.tar.gz
 cd ossec-hids-*
-./install.sh
+. ./install.sh
 
+# files should have placed an init script for us,
+# but this might have gotten overwritten
+cd $workdir
+cp files/etc/init.d/ossec /etc/init.d/ossec
+update-rc.d ossec start 12 2 . stop 90 0 6 .
 
