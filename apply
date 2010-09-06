@@ -22,20 +22,22 @@ git branch
 # substitute installed copies for version controlled ones
 workdir=$PWD
 cd files/
+#♯ why the hello not rsync?: b/c diff!
 for file in `find . -type f | sed 's/^.\///'`
 do
-    echo $file
+   echo $file
+   stat $file # should diff permissions too
 	if ! diff -bud /$file $file || [ $? = 2 ]
 	then
 		echo "$file doesn't match local copy, [a]pply, commit or SKIP?"
 		read choose
 		case $choose in
 			[aA])
-			cp -v $file /$file
+			cp -av $file /$file
 			;;
 
 			commit)
-			cp -v /$file $file
+			cp -av /$file $file
 			git diff $file
 			git add $file
 			git commit
