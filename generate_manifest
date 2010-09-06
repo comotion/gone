@@ -1,0 +1,8 @@
+#!/bin/sh
+#
+# Generate manifest file for integrity checking
+
+method=${1:-sha256sum}
+find . -type f | 
+   egrep -v '^\./inst|^\./\.|manifest.$method' | 
+   xargs $method > manifest.$method
