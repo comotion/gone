@@ -4,5 +4,5 @@
 
 method=${1:-sha256sum}
 find . -type f | 
-   egrep -v '^\./inst|^\./\.|manifest.$method' | 
+   egrep -v '^\./(inst|\.|manifest\.)' | 
    xargs $method > manifest.$method

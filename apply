@@ -36,16 +36,11 @@ integrity_check () {
    for method in $check_methods
    do
       file=$check_filename.$method
-      if [ -f $file.sign ]
+      if [ -f $file.gpg ]
       then
-         gpg --verify $file.sign || exit 5
-      else
-         echo "$file.sign not available, can't guarantee integrity"
-         exit 6
-      fi
-      if [ -f $file ]
-      then
-         gpg -v $file.sign || 
+         
+         [ -f $file ] && mv $file $file.old
+         gpg --output $file -d $file.gpg || exit 7
          if [ -z "`which $method`" ]
          then
             echo $method not available
