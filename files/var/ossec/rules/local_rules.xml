@@ -29,12 +29,13 @@
     <description>failed logins from IP 1.1.1.1.</description>
   </rule>
 
-  <localfile> 
-    <log_format>full_command</log_format> 
-    <command>netstat-ossec.sh</command> 
-  </localfile> 
-  
-  
+  <rule id="140128" level="7"> 
+    <if_sid>530</if_sid> 
+    <match>ossec: output: 'netstat-ossec</match> 
+    <check_diff /> 
+    <description>Listen ports have changed.</description> 
+  </rule>  
+
   <!-- This example will ignore ssh failed logins for the user name XYZABC.
     -->
   <!--  
