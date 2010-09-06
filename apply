@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/sh -x
 # yes the shell
 # 2010-08-31 Kacper Wysocki <comotion@krutt.org> Initial version
 # 
@@ -10,6 +10,10 @@
 fqdn=`hostname -f`
 host=`hostname`
 
+# comment the methods out to disable integrity checking
+check_methods='sha512sum sha384sum sha256sum sha1sum md5sum'
+check_filename=manifest
+
 # hostname, $fqdn or other specifics are kept in branches
 git checkout $host 2>/dev/null
 git checkout $fqdn 2>/dev/null
@@ -18,6 +22,58 @@ git branch
 # weakness: one machine may have many roles, not in this scheme though
 # edit: keep separate repos for each role...
 # or keep the same files and figure out a way to do multiple inheritance
+
+# do integrity check of all available methods.
+# normally you'd only be using one method, the safest one you can afford
+# contrived to allow you to decide which one(s) when generating the manifest(s)
+integrity_check () {
+   passed=
+   if [ -z "`which gpg`" ]
+   then
+      echo "gpg not available, can't guarantee integrity"
+      exit 4
+   fi
+   for method in $check_methods
+   do
+      file=$check_filename.$method
+      if [ -f $file.sign ]
+      then
+         gpg --verify $file.sign || exit 5
+      else
+         echo "$file.sign not available, can't guarantee integrity"
+         exit 6
+      fi
+      if [ -f $file ]
+      then
+         gpg -v $file.sign || 
+         if [ -z "`which $method`" ]
+         then
+            echo $method not available
+            continue
+         fi
+            
+         if $method -c $file
+         then
+            passed="$method $passed"
+         else
+	    echo "Integrity check $method failed!"
+	    exit 2
+         fi
+      fi
+   done
+   if [ -z "$passed" ]
+   then
+      echo "Integrity not available."
+      exit 3
+   fi
+   
+}
+   
+
+if [ "$1" = "check" ]
+then
+   integrity_check
+fi
 
 # substitute installed copies for version controlled ones
 workdir=$PWD
