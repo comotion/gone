@@ -1,4 +1,4 @@
-#!/bin/sh -x
+#!/bin/sh
 #
 # Check if the harddrive is failing
 
@@ -6,3 +6,11 @@ apt-get install smartmontools
 
 sed -i 's/^#start_smart/start_smart/' /etc/default/smartmontools
 /etc/init.d/smartmontools restart
+
+# check what's up
+for disk in `cat /proc/partitions | awk '/[sh]d.$/ { print $4 }'`
+   do
+   smartctl --attributes --log=selftest --quietmode=errorsonly $disk
+done
+
+

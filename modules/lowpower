@@ -27,6 +27,8 @@ fi
 ./lowpower >/dev/null 2>lowpower_debug.log
 [ $HAVE_BATT = 1 ] && grep '^present rate:' $BATT && echo "this is a one-minute average, check $BATT soon"
 
+hdparm -S 12 /dev/sda
+
 # make sure we don't install twice
 if ! grep lowpower /etc/rc.local
 then
