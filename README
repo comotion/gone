@@ -2,7 +2,8 @@
 gone configuration management
 =============================
 basic idea: 
- - shell scripts + git. 
+ - rsync + shell scripts + git. 
+... and I didn't even need rsync!
 
 Puppet exists. Chef exists. CFEngine exists. Slaughter exists.
 However:
@@ -10,6 +11,7 @@ I want to depend on nothing but git.
 I want to decentralise the "master".
 I want my scripts to be standalone.
 
+introducing the gone system:
  bash script with case $HOSTNAME and *) do defaults
  # apply default conf to all services
  git clone git://github.com/comotion/gone.git; cd gone; ./apply
@@ -45,3 +47,5 @@ libs for:
     package installation on any distro
     service initscript installation
     checking configuration
+.. might make it easier to write scripts, but
+scripts will no longer stand alone!
