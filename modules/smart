@@ -1,0 +1,8 @@
+#!/bin/sh -x
+#
+# Check if the harddrive is failing
+
+apt-get install smartmontools
+
+sed -i 's/^#start_smart/start_smart/' /etc/default/smartmontools
+/etc/init.d/smartmontools restart
