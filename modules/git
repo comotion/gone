@@ -1,0 +1,6 @@
+#!/bin/sh
+#
+# just to be clear on things: we need git
+# comotion@krutt.org
+
+apt-get install git-core
