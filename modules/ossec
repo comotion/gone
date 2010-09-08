@@ -1,4 +1,4 @@
-#!/bin/sh -x
+#!/bin/sh
 #
 #
 # www.ossec.net
@@ -37,7 +37,7 @@ wget $SOURCE/${PKG}_sum.txt -qO - | grep 'SHA1.*gz' | sed 's/hids.*tar.gz/hids-l
 if [ -f ossec-hids-sum.txt ] && diff -q ossec-hids-sum.txt ossec-hids-latest_sum.txt
 then
    echo latest ossec already installed
-#   exit 0
+   exit 0
 elif [ -z "`cat ossec-hids-latest_sum.txt`" ]
 then
    echo "couldn't get update, checking old download"
