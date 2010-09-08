@@ -4,3 +4,20 @@
 # comotion@krutt.org
 
 apt-get install git-core
+
+# update and sign manifest before commiting
+
+if [ ! -f .git/hooks/pre-commit ]
+then
+cat > .git/hooks/pre-commit << EOF
+#!/bin/sh
+# update and sign manifest before commiting
+# - gone configuration
+./generate_manifest
+for i in ./manifest.*sum
+   do
+   gpg --yes --sign $i
+   git add $i
+done
+EOF
+chmod +x .git/hooks/pre-commit
