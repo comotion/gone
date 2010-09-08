@@ -1,4 +1,4 @@
-#!/bin/sh -x
+#!/bin/sh
 # yes the shell
 # 2010-08-31 Kacper Wysocki <comotion@krutt.org> Initial version
 # 
@@ -19,13 +19,20 @@ git checkout $host 2>/dev/null
 git checkout $fqdn 2>/dev/null
 
 git branch
-# weakness: one machine may have many roles, not in this scheme though
+# XXX weakness: one machine may have many roles, not in this scheme though
 # edit: keep separate repos for each role...
 # or keep the same files and figure out a way to do multiple inheritance
 
+#### some important functions ... the real red meat  ####
+
 # do integrity check of all available methods.
-# normally you'd only be using one method, the safest one you can afford
+# normally you're only using one method, the safest one you can afford
 # contrived to allow you to decide which one(s) when generating the manifest(s)
+# just by signing the manifests you want to use.
+# 
+# XXX:
+# Do we want to do this the hard way? This needs more than just a manifest:
+# there is a multiuser use case for signing some files with a different key.
 integrity_check () {
    passed=
    if [ -z "`which gpg`" ]
@@ -38,21 +45,25 @@ integrity_check () {
       file=$check_filename.$method
       if [ -f $file.gpg ]
       then
-         
-         [ -f $file ] && mv $file $file.old
-         gpg --output $file -d $file.gpg || exit 7
+         # no sense checking if we're missing programs
          if [ -z "`which $method`" ]
          then
             echo $method not available
             continue
          fi
+         
+         # a
+         [ -f $file ] && mv $file $file.old
+         gpg --yes --output $file -d $file.gpg || exit 7
+         diff $file.old $file
             
-         if $method -c $file
+         # ah the shittiness of bash exit codes
+         if $method -c $file #| grep -v ': OK$'
          then
             passed="$method $passed"
          else
-	    echo "Integrity check $method failed!"
-	    exit 2
+            echo "Integrity check $method failed!"
+            exit 2
          fi
       fi
    done
@@ -64,42 +75,54 @@ integrity_check () {
    
 }
    
+match_copy () {
+# substitute installed copies for version controlled ones
+   workdir=$PWD
+   cd files/
+   #♯ why the hello not rsync?: b/c diff!
+   for file in `find . -type f | sed 's/^.\///'`
+   do
+      echo $file
+      stat /$file # XXX: should diff/do permissions too
+      # oh and selinux context shizzat... but that mabbe a module
+      if ! diff -bud /$file $file || [ $? = 2 ]
+      then
+         if [ -z "$USER_CHOSE" ]
+            then
+            echo "$file doesn't match local copy, (a)pply, (commit) or [SKIP]?"
+            read choose
+         else
+            choose=$USER_CHOSE
+         fi
+         case $choose in
+            [aA])
+            cp -av $file /$file
+            ;;
 
-if [ "$1" = "check" ]
+            commit)
+            cp -av /$file $file
+            git diff $file
+            git add $file
+            git commit
+            ;;
+            
+            *)
+               # skip
+         esac
+      fi
+   done
+   cd $workdir
+}
+
+# off or on by default?
+# if [ "$1" = "check" ]
+if [ "$1" != "nocheck" ]
 then
    integrity_check
 fi
 
-# substitute installed copies for version controlled ones
-workdir=$PWD
-cd files/
-#♯ why the hello not rsync?: b/c diff!
-for file in `find . -type f | sed 's/^.\///'`
-do
-   echo $file
-   stat $file # should diff permissions too
-	if ! diff -bud /$file $file || [ $? = 2 ]
-	then
-		echo "$file doesn't match local copy, [a]pply, commit or SKIP?"
-		read choose
-		case $choose in
-			[aA])
-			cp -av $file /$file
-			;;
-
-			commit)
-			cp -av /$file $file
-			git diff $file
-			git add $file
-			git commit
-			;;
-			
-			*)
-            # skip
-		esac
-	fi
-done
-cd $workdir
+# place files where they should be
+match_copy
 
 # kick the script - basically what chef, slaughter and puppet does
 . $workdir/defaults
