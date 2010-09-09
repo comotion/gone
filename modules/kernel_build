@@ -1,0 +1,16 @@
+#!/bin/sh
+# build some custom kernel
+# these are still just notes
+# comotion@krutt.org
+
+apt-get install linux-image-2.6.32-3-amd64 linux-source-2.6.32 kernel-package
+tar xf /usr/src/linux-source-2.6.32.tar.bz2
+cd linux-source-2.6.32
+cp /boot/config-2.6.32-3-amd64 .config
+edit .config:
+ CONFIG_KPROBES=y
+ CONFIG_DEBUG_INFO=y
+make oldconfig
+export PATH="/usr/lib/ccache:$PATH"
+make-kpkg -j 16 --append-to-version +kprobes --revision=1 --initrd binary-arch
+
