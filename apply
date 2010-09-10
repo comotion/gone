@@ -29,12 +29,15 @@ git branch
 # normally you're only using one method, the safest one you can afford
 # contrived to allow you to decide which one(s) when generating the manifest(s)
 # just by signing the manifests you want to use.
+# someone might have snuck in a file that is missing in the manifest, so only use
+# the manifest when applying files.
+
 # 
 # XXX:
 # Do we want to do this the hard way? This needs more than just a manifest:
 # there is a multiuser use case for signing some files with a different key.
+PASSED=
 integrity_check () {
-   passed=
    if [ -z "`which gpg`" ]
    then
       echo "gpg not available, can't guarantee integrity"
@@ -60,14 +63,17 @@ integrity_check () {
          # ah the shittiness of bash exit codes
          if $method -c $file #| grep -v ': OK$'
          then
-            passed="$method $passed"
+            # only need to check strongest method available
+            # cryptographically useless to check weaker methods once we pass
+            PASSED="$method"
+            break
          else
             echo "Integrity check $method failed!"
             exit 2
          fi
       fi
    done
-   if [ -z "$passed" ]
+   if [ -z "$PASSED" ]
    then
       echo "Integrity not available."
       exit 3
@@ -79,8 +85,17 @@ match_copy () {
 # substitute installed copies for version controlled ones
    workdir=$PWD
    cd files/
+   if [ -z check_methods ]
+   then
+      FILES="`find . -type f | sort | sed 's/^.\///'`"
+   else
+      # close a loophole by using files from the manifest only
+      FILES=`cat ../manifest.$PASSED | cut -f 1 -d ' ' --complement | grep '^ \./files/' | sed 's/^ .\/files\///'`
+      [ $! ] && exit 2
+   fi
    #♯ why the hello not rsync?: b/c diff!
-   for file in `find . -type f | sed 's/^.\///'`
+   # files should be relative paths
+   for file in $FILES
    do
       echo $file
       stat /$file # XXX: should diff/do permissions too
