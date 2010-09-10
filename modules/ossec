@@ -34,7 +34,7 @@ workdir=$PWD
 mkdir -p inst
 cd inst
 wget $SOURCE/${PKG}_sum.txt -qO - | grep 'SHA1.*gz' | sed 's/hids.*tar.gz/hids-latest.tar.gz/' > ossec-hids-latest_sum.txt
-if [ -f ossec-hids-sum.txt ] && diff -q ossec-hids-sum.txt ossec-hids-latest_sum.txt
+if [ -f ossec-hids-sum.txt ] && diff -q ossec-hids-sum.txt ossec-hids-latest_sum.txt && [ -d /var/ossec ]
 then
    echo latest ossec already installed
    exit 0
