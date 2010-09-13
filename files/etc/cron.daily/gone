@@ -1,0 +1,20 @@
+#!/bin/sh -x
+#
+# Re-apply gone configuration
+# comotion@krutt.org 2010
+
+gonedir=${1:-.}
+
+cd $gonedir
+tf=`tempfile || exit 1`
+git log -1 > $tf
+git pull >/dev/null
+# don't apply if no change
+if git log -1 | diff $tf -
+then
+   : #no change
+else
+   ./apply >/dev/null
+fi
+rm -f $tf
+
