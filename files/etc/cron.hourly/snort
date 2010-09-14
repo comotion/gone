@@ -1,0 +1,14 @@
+#! /bin/bash -x
+
+set -e
+oink=SET_YOUR_OINKCODE
+
+cd /etc/snort
+#wget -q http://www.snort.org/pub-bin/oinkmaster.cgi/$oink/snortrules-snapshot-2.8.tar.gz -O - | tar xzf - 
+wget -q http://www.snort.org/pub-bin/oinkmaster.cgi/$oink/snortrules-snapshot-2853.tar.gz -O - | tar xzf -
+
+
+wget -q http://www.emergingthreats.net/rules/emerging.rules.tar.gz -O - | tar xzf - 
+
+/etc/init.d/snort reload > /dev/null
+
