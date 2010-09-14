@@ -1,0 +1,13 @@
+#!/bin/sh
+# make sure what goes where
+#
+# comotion@krutt.org
+
+for user in root kwy comotion
+do
+  if getent passwd $user >/dev/null
+     then
+     dir=`getent passwd $user | cut -f 6 -d :`
+     chattr +a $dir/.bash_history
+  fi
+done
