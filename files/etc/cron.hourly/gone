@@ -14,7 +14,7 @@ if git log -1 | diff $tf -
 then
    : #no change
 else
-   ./apply >/dev/null
+   USER_CHOSE=a ./apply >/dev/null
 fi
 rm -f $tf
 
