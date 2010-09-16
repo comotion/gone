@@ -29,6 +29,7 @@
     <description>failed logins from IP 1.1.1.1.</description>
   </rule>
 
+  <!-- check for server ports -->
   <rule id="140128" level="7"> 
     <if_sid>530</if_sid> 
     <match>ossec: output: 'netstat-ossec</match> 
