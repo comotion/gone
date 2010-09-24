@@ -1,0 +1,20 @@
+#!/bin/sh
+
+#
+# install varnish + security.vcl
+# comotion@krutt.org
+
+apt-get install varnish
+
+# grab security.vcl
+mkdir -p inst
+cd inst
+if [ ! -d security.vcl ]
+   then
+   svn co http://varnish-cache.org/svn/trunk/varnish-tools/security.vcl/
+fi
+
+cd security.vcl
+svn up
+
+ln -sf vcl /etc/varnish/security
