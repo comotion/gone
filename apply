@@ -19,9 +19,11 @@ git checkout $host 2>/dev/null
 git checkout $fqdn 2>/dev/null
 
 git branch
-# XXX weakness: one machine may have many roles, not in this scheme though
-# edit: keep separate repos for each role...
+# potential weakness: one machine may have many roles, not in this scheme though
+# edit: keep separate branch for each role...
 # or keep the same files and figure out a way to do multiple inheritance
+# .. bah, do special things in the modules
+#
 
 #### some important functions ... the real red meat  ####
 
@@ -85,20 +87,28 @@ match_copy () {
 # substitute installed copies for version controlled ones
    workdir=$PWD
    cd files/
-   if [ -z check_methods ]
+   if [ -z "$check_methods" ]
    then
+      # no signature, no manifest
       FILES="`find . -type f | sort | sed 's/^.\///'`"
    else
       # close a loophole by using files from the manifest only
       FILES=`cat ../manifest.$PASSED | cut -f 1 -d ' ' --complement | grep '^ \./files/' | sed 's/^ .\/files\///'`
-      [ $! ] && exit 2
+      [ $! ] && exit 2 # quit on error
    fi
    #♯ why the hello not rsync?: b/c diff!
    # files should be relative paths
    for file in $FILES
    do
-      echo $file
-      stat /$file # XXX: should diff/do permissions too
+      # XXX: should diff/remember permissions too
+      stati=`stat -t $file`
+      #stato=`stat -t /$file`
+      stato=`stat -t /$file`
+      stats=`stat -c '%a %u %g %C' /$file`
+      statd=`stat -c '%a %u %g %C' $file`
+      echo "$file $stats"
+      echo "$file.$statd"
+      lsattr "$file"
       # oh and selinux context shizzat... but that mabbe a module
       if ! diff -bud /$file $file || [ $? = 2 ]
       then
@@ -133,9 +143,12 @@ match_copy () {
 # if [ "$1" = "check" ]
 if [ "$1" != "nocheck" ]
 then
-   integrity_check
+   integrity_check $@
 fi
-
+if [ "$1" = "check" ]
+   # just check
+   exit
+fi
 # place files where they should be
 match_copy
 
