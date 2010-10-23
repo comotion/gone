@@ -128,38 +128,17 @@ TTYPERM		0600
 #
 #	ERASECHAR	Terminal ERASE character ('\010' = backspace).
 #	KILLCHAR	Terminal KILL character ('\025' = CTRL/U).
-#	UMASK		Default "umask" value.
 #
 # The ERASECHAR and KILLCHAR are used only on System V machines.
 # 
-# UMASK usage is discouraged because it catches only some classes of user
-# entries to system, in fact only those made through login(1), while setting
-# umask in shell rc file will catch also logins through su, cron, ssh etc.
-#
-# At the same time, using shell rc to set umask won't catch entries which use
-# non-shell executables in place of login shell, like /usr/sbin/pppd for "ppp"
-# user and alike.
-#
-# Therefore the use of pam_umask is recommended as the solution which
-# catches all these cases on PAM-enabled systems.
-# 
-# This avoids the confusion created by having the umask set
-# in two different places -- in login.defs and shell rc files (i.e.
-# /etc/profile).
-#
-# For discussion, see #314539 and #248150 as well as the thread starting at
-# http://lists.debian.org/debian-devel/2005/06/msg01598.html
-#
 # Prefix these values with "0" to get octal, "0x" to get hexadecimal.
 #
 ERASECHAR	0177
 KILLCHAR	025
-# 022 is the "historical" value in Debian for UMASK when it was used
-# 027, or even 077, could be considered better for privacy
-# There is no One True Answer here : each sysadmin must make up his/her
-# mind.
-#UMASK		022
 
+# UMASK: reduntant and spotty file creation mask: see shell rc and pam
+# for umask's you can trust more. Set this one to what is expected.
+UMASK		022
 #
 # Password aging controls:
 #

@@ -144,8 +144,11 @@ match_copy () {
 if [ "$1" != "nocheck" ]
 then
    integrity_check $@
+else
+   check_methods=
 fi
 if [ "$1" = "check" ]
+then
    # just check
    exit
 fi
