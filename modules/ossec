@@ -27,13 +27,14 @@ USER_UPDATE_RULES=yes
 
 apt-get install build-essential
 
+MAJ_VER=2.5
 SOURCE=http://www.ossec.net/files
 PKG=ossec-hids-latest
 workdir=$PWD
 
 mkdir -p inst
 cd inst
-wget $SOURCE/${PKG}_sum.txt -qO - | grep 'SHA1.*gz' | sed 's/hids.*tar.gz/hids-latest.tar.gz/' > ossec-hids-latest_sum.txt
+wget $SOURCE/${PKG%latest}${MAJ_VER}_checksum.txt -qO - | grep 'SHA1.*gz' | sed 's/hids.*tar.gz/hids-latest.tar.gz/' | tail -n 1 > ossec-hids-latest_sum.txt
 if [ -f ossec-hids-sum.txt ] && diff -q ossec-hids-sum.txt ossec-hids-latest_sum.txt && [ -d /var/ossec ]
 then
    echo latest ossec already installed
@@ -48,11 +49,13 @@ else
    cp ossec-hids-latest_sum.txt ossec-hids-sum.txt
    wget -c $SOURCE/${PKG}.tar.gz
    sha1sum -c ossec-hids-sum.txt || exit 0
-   tar xvf ossec-hids-latest.tar.gz
+   tar xf ossec-hids-latest.tar.gz
 fi
 
 
 cd ossec-hids-*
+# make setoneway setfullsubject
+sed ’s/maild.full_subject=1/maild.full_subject=0/g’ etc/internal_options.conf
 . ./install.sh
 
 # files should have placed an init script for us,
