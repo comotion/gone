@@ -6,14 +6,8 @@
 #
 # run the defaults as well as host specific code
 
-doscript() {
-   script=$1
-   shift
-   echo "execing $script"
-   modules/$script $@
-}
-
-case `hostname -f` in
+host=`hostname -f`
+case $host in
 	kwy.u*)
           spec=server
           ;;
@@ -21,12 +15,31 @@ case `hostname -f` in
           spec=
 esac
 
-echo "the default is never good enough"
+doscript() {
+   script=$1
+   shift
+   echo "execing $script"
+   modules/$script $@
+}
 
-doscript lowpower
-doscript ubuntu
-doscript dote_firewall $spec
-doscript ossec $spec
+do_plural() {
+   for script in $@
+   do
+      doscript $script $spec
+   done
+}
+
+echo "the default is never good enough"
+do_plural policy ubuntu lowpower dote_firewall
+
+echo "host specific defaults for $host"
+case $host in
+   bt*)
+      do_plural prads
+      ;;
+     *)
+      do_plural ossec
+esac
 
 echo " first: munin nagios "
 echo "multilog gitorius gitolite"
