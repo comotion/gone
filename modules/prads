@@ -1,0 +1,21 @@
+#!/bin/sh
+# grab and install prads
+# comotion@krutt.org
+
+PKG=prads
+REPO=git@github.com:gamelinux/$PKG.git
+
+mkdir -p inst
+cd inst
+if [ ! -d $PKG/.git ]
+then
+   git clone $REPO
+fi
+
+cd $PKG
+git pull
+
+make clean
+make
+make install
+
