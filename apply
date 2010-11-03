@@ -40,6 +40,14 @@ git branch
 # there is a multiuser use case for signing some files with a different key.
 PASSED=
 integrity_check () {
+   for arg in $@
+   do
+      if [ "$arg" = "quiet" ]
+         then
+         quiet='--quiet'
+      fi
+   done
+
    if [ -z "`which gpg`" ]
    then
       echo "gpg not available, can't guarantee integrity"
@@ -63,7 +71,7 @@ integrity_check () {
          diff $file.old $file
             
          # ah the shittiness of bash exit codes
-         if $method -c $file #| grep -v ': OK$'
+         if $method $quiet -c $file
          then
             # only need to check strongest method available
             # cryptographically useless to check weaker methods once we pass
@@ -100,16 +108,28 @@ match_copy () {
    # files should be relative paths
    for file in $FILES
    do
-      # XXX: should diff/remember permissions too
+      # XXX: remember attribs, uid/gid, extattr and selinux context
+      # any and all uniquely definable characteristics of the file
+      # problem: bash sux for this :-(
+      stato=
+      stats=
+      attrs=
       stati=`stat -t $file`
-      #stato=`stat -t /$file`
-      stato=`stat -t /$file`
-      stats=`stat -c '%a %u %g %C' /$file`
-      statd=`stat -c '%a %u %g %C' $file`
-      echo "$file $stats"
-      echo "$file.$statd"
-      lsattr "$file"
-      # oh and selinux context shizzat... but that mabbe a module
+      statd=`stat -c '%a %u %g %C' $file 2>/dev/null`
+      if [ -f /$file ]
+         then
+            stato=`stat -t /$file`
+            stats=`stat -c '%a %u %g %C' /$file 2>/dev/null`
+            #stata=( $stats ) # an array. arrays suck in dash
+            attrs=`lsattr "/$file" | awk '{print $1}'`
+      fi
+      echo "/$file $stats $attrs"
+      echo " $file.$statd"
+      if [ "$stats" != "$statd" ]
+         then
+         echo 'attribs, user, groups'
+         #echo ${stata[0]} ${stata[1]} ${stata[2]}
+      fi
       if ! diff -bud /$file $file || [ $? = 2 ]
       then
          if [ -z "$USER_CHOSE" ]
