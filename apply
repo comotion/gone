@@ -40,14 +40,6 @@ git branch
 # there is a multiuser use case for signing some files with a different key.
 PASSED=
 integrity_check () {
-   for arg in $@
-   do
-      if [ "$arg" = "quiet" ]
-         then
-         quiet='--quiet'
-      fi
-   done
-
    if [ -z "`which gpg`" ]
    then
       echo "gpg not available, can't guarantee integrity"
