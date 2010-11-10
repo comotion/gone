@@ -4,7 +4,7 @@
 # comotion@krutt.org
 
 PKG=lowpower
-REPO=git@github.com:comotion/$PKG.git
+REPO=git://github.com:comotion/$PKG.git
 
 mkdir -p inst
 cd inst
