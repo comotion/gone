@@ -1,0 +1,59 @@
+#!/bin/sh
+# grab and install htrosbif / checkweb
+# comotion@krutt.org
+
+PKG=htrosbif
+REPO=http://anduin.net/~knan/$PKG.git/
+if [ -z "$INSTPATH" ]
+    then
+    INSTPATH=/usr/local/bin
+fi
+
+[ -z "$QUIET" ] && echo "Installing dependencies for $PKG"
+sudo apt-get -qq install liblist-moreutils-perl libjson-xs-perl libtest-deep-perl
+
+mkdir -p inst
+cd inst
+if [ ! -d $PKG/.git ]
+then
+   git clone $REPO
+fi
+
+cd $PKG
+git pull
+
+chmod +x ./htrosbif
+
+dir=$PWD
+
+
+cat > checkweb << EOF
+#!/bin/sh
+# check webserver identification
+# kwy@redpill-linpro.com
+
+URL="\$@"
+htrosbif=$PWD
+
+if [ -z "\$URL" ]
+    then
+    echo "Check webserver identification."
+    echo "Usage: checkweb URL"
+    echo "  example: checkweb http://redpill-linpro.com/"
+    exit 1
+fi
+
+# get header info
+GET -USed \$URL
+
+# do magic checks
+cd \$htrosbif
+./htrosbif \$URL
+
+EOF
+
+chmod +x checkweb
+
+[ -z "$QUIET" ] && echo "Installing checkweb into $INSTPATH"
+sudo cp checkweb $INSTPATH
+[ -z "$QUIET" ] && echo "done. now run 'checkweb'"
