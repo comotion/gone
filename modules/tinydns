@@ -21,7 +21,7 @@ useradd -g $CACHEUID -u $CACHEUID $CACHEUSER -d $HOME -s /usr/sbin/nologin
 groupadd -g $LOGUID $LOGUSER
 useradd -g $LOGUID -u $LOGUID $LOGUSER -d $HOME -s /usr/sbin/nologin
 HOME=/service/tinydns
-groupadd -g $DNSUSER $DNSUSER
+groupadd -g $DNSUID $DNSUSER
 useradd -g $DNSUID -u $DNSUID $DNSUSER -d $HOME -s /usr/sbin/nologin
 
 
@@ -37,5 +37,10 @@ git pull
 make
 make setup check
 
-#dnscache-conf Gdnscache Gdnslog /etc/dnscache 10.53.0.1
-#tinydns-conf Gtinydns Gdnslog /etc/tinydns 1.8.7.200
+
+echo
+echo ... now configure your service:
+echo dnscache-conf Gdnscache Gdnslog /etc/dnscache 10.53.0.1
+echo ln -s /etc/dnscache/ /service/dnscache
+echo tinydns-conf Gtinydns Gdnslog /etc/tinydns 1.8.7.200
+echo ln -s /etc/tinydns/ /service/tinydns
