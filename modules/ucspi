@@ -1,0 +1,35 @@
+#!/bin/sh
+# grab and install ucspi tools
+# comotion@krutt.org 2011-05-29
+
+PKG=ucspi-tcp
+REPO=https://github.com/comotion/$PKG.git
+
+# avaliable in the repo
+  266  wget http://cr.yp.to/ucspi-tcp/ucspi-tcp-0.88.tar.gz
+  278  wget http://www.fefe.de/ucspi/ucspi-tcp-0.88-ipv6.diff19.bz2
+  340  tar xf ucspi-tcp-0.88.tar.gz 
+  341  cd ucspi-tcp-0.88/
+  342  git init
+  343  git add *
+  344  git commit -m 'Initial import of djb ucspi-tcp-0.88'
+  345  bzcat ../ucspi-tcp-0.88-ipv6.diff19.bz2 | patch -p1
+  rm -r usr/
+  362  git diff
+  363  git add *
+  364  git commit -m "Fefe's ipv6 patches http://www.fefe.de/ucspi/"
+make setup check
+
+
+mkdir -p inst
+cd inst
+if [ ! -d $PKG/.git ]
+then
+   git clone $REPO
+fi
+
+cd $PKG
+git pull
+make
+make install
+

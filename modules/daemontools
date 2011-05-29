@@ -1,0 +1,42 @@
+#!/bin/sh
+# grab and install daemontools-encore
+# comotion@krutt.org 2011-05-29
+
+PKG=daemontools-encore
+REPO=http://untroubled.org/git/daemontools-encore.git
+# also available at
+#REPO=https://github.com/bruceg/daemontools-encore.git
+
+mkdir -p inst
+cd inst
+if [ ! -d $PKG/.git ]
+then
+   git clone $REPO
+fi
+
+cd $PKG
+git pull
+if [ ! -f Makefile ]
+   then
+   ./makemake
+fi
+if [ ! -f rts ]
+   then
+   make
+fi
+
+if ! which svscanboot >/dev/null
+   then
+   make install
+fi
+
+if [ ! -d /service ]
+   then
+   mkdir -p /service
+fi
+# make sure we don't install twice
+if ! grep -q svscanboot /etc/inittab
+then
+   echo SV:123456:respawn:/usr/local/bin/svscanboot >> /etc/inittab
+fi
+

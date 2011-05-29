@@ -1,0 +1,34 @@
+#!/bin/sh
+# grab and install djb tinydns
+# comotion@krutt.org 2011-05-29
+#
+# depends on daemontools and ucspi-tcp (+ipv6?)
+
+PKG=djbdns
+REPO=https://github.com/comotion/$PKG.git
+
+CACHEUSER=Gdnscache
+CACHEUID=5301
+LOGUSER=Gdnslog
+LOGUID=5302
+
+HOME=/service/dnscache
+
+groupadd -g $CACHEUID $CACHEUSER
+useradd -g $CACHEUID -u $CACHEUID $CACHEUSER -d $HOME -s /usr/sbin/nologin
+groupadd -g $LOGUID $LOGUSER
+useradd -g $LOGUID -u $LOGUID $LOGUSER -d $HOME -s /usr/sbin/nologin
+
+mkdir -p inst
+cd inst
+if [ ! -d $PKG/.git ]
+then
+   git clone $REPO
+fi
+
+cd $PKG
+git pull
+make
+make setup check
+
+#dnscache-conf Gdnscache Gdnslog /etc/dnscache 10.53.0.1
