@@ -1,0 +1,12 @@
+service ntalk
+{
+
+   disable        = no
+   socket_type    = dgram
+   wait           = yes
+   user           = nobody
+   group          = tty
+   server         = /usr/sbin/in.ntalkd
+   bind           = 127.0.0.1
+   only_from      = 127.0.0.1
+}

@@ -1,0 +1,16 @@
+#!/bin/sh
+# 
+# get ntalk
+# comotion@krutt.org
+
+# the hard way:
+# to chroot build a deb package
+# 
+# the easy way:
+# let you worry about your hosts
+
+apt-get install xinetd ytalk inetutils-talkd
+
+#files/ should take care of the rest
+#/etc/xinetd.d/talk
+
