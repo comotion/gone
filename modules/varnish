@@ -11,10 +11,13 @@ mkdir -p inst
 cd inst
 if [ ! -d security.vcl ]
    then
-   svn co http://varnish-cache.org/svn/trunk/varnish-tools/security.vcl/
+   git clone git://github.com/comotion/security.vcl.git
 fi
 
 cd security.vcl
-svn up
+git pull
+cd vcl
+make
+cd ..
 
-ln -sf vcl /etc/varnish/security
+ln -sf $PWD/vcl /etc/varnish/security
