@@ -3,8 +3,14 @@
 # 2010-08-31 Kacper Wysocki <comotion@krutt.org> Initial version
 # 
 # bottom up is better than top down
-# 
-# git clone repo/gone ; cd gone; ./apply
+
+usage () {
+   echo "git clone repo/gone ; cd gone; ./apply"
+   echo
+   echo "./apply nocheck - do not check file integrity"
+   echo "./apply check   - only check integrity"
+   echo "./apply quiet   - only print important stuff"
+}
 
 # let defaults be default: fall back to logic
 fqdn=`hostname -f`
@@ -40,6 +46,14 @@ git branch
 # there is a multiuser use case for signing some files with a different key.
 PASSED=
 integrity_check () {
+   for arg in $@
+   do
+      if [ "$arg" = "quiet" ]
+         then
+         quiet='--quiet'
+      fi
+   done
+
    if [ -z "`which gpg`" ]
    then
       echo "gpg not available, can't guarantee integrity"
@@ -85,6 +99,7 @@ integrity_check () {
    
 match_copy () {
 # substitute installed copies for version controlled ones
+   check_methods=`shift`
    workdir=$PWD
    cd files/
    if [ -z "$check_methods" ]
@@ -106,22 +121,25 @@ match_copy () {
       stato=
       stats=
       attrs=
-      stati=`stat -t $file`
+      stati=`stat -t $file` # terse pickle
       statd=`stat -c '%a %u %g %C' $file 2>/dev/null`
       if [ -f /$file ]
          then
-            stato=`stat -t /$file`
+            stato=`stat -t /$file` # terse target
             stats=`stat -c '%a %u %g %C' /$file 2>/dev/null`
             #stata=( $stats ) # an array. arrays suck in dash
             attrs=`lsattr "/$file" | awk '{print $1}'`
       fi
+      # compare the pickle with the target
       echo "/$file $stats $attrs"
       echo " $file.$statd"
       if [ "$stats" != "$statd" ]
          then
-         echo 'attribs, user, groups'
-         #echo ${stata[0]} ${stata[1]} ${stata[2]}
+         # noncritical failure
+         echo 'pickle and target do not match, check lsattr and ownership'
+         #echo ${stata[0]} ${stata[1]} ${stata[2]} # not portable to dash
       fi
+      # diff is what's important
       if ! diff -bud /$file $file || [ $? = 2 ]
       then
          if [ -z "$USER_CHOSE" ]
@@ -150,10 +168,14 @@ match_copy () {
    done
    cd $workdir
 }
+if [ "$1" = "help" ]
+then
+   usage
+fi
 
 # off or on by default?
 # if [ "$1" = "check" ]
-if [ "$1" != "nocheck" ]
+if [ "$1" != "nocheck" ] # on by default
 then
    integrity_check $@
 else
@@ -165,7 +187,7 @@ then
    exit
 fi
 # place files where they should be
-match_copy
+match_copy $check_methods
 
 # kick the script - basically what chef, slaughter and puppet does
 . $workdir/defaults
