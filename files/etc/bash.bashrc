@@ -26,7 +26,7 @@ alias xterm="aterm -bg black -fg green -cr darkgreen"
 export PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/sbin:/usr/local/bin:~/bin #::$PATH
 
 set bell-style none
-#export EDITOR=vif
+export EDITOR=vim
 shopt -s cdspell extglob no_empty_cmd_completion checkwinsize histappend
 #PROMPT_COMMAND='history -a'
 ulimit -c unlimited
