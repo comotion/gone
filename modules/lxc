@@ -1,0 +1,31 @@
+#!/bin/sh
+
+#
+# install containers
+# needed: bridge networking,cgroupfs,rools
+# comotion@krutt.org
+REPO=git://git.nigel.mcnie.name/lxc-debian.git
+NAME=lxc-debian
+
+apt-get install lxc
+
+mkdir /cgroup
+if ! grep cgroup /etc/fstab
+then 
+  echo cgroup  /cgroup  cgroup  defaults  0  0 >> /etc/fstab
+fi
+
+
+# grab git
+mkdir -p inst
+cd inst
+if [ ! -d $NAME ]
+   then
+   git clone $REPO
+fi
+
+cd $NAME
+git pull
+ln -sf $PWD/lxc-create /usr/local/bin/
+ln -sf $PWD/init /etc/init.d/
+cd ..
