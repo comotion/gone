@@ -1,29 +1,52 @@
-#!/bin/sh -x
-#
-# Build a chroot for $task
+#!/bin/sh
+# chroot $task $dir 
+# Build a chroot for $task in $dir
 #
 # comotion@krutt.org
 
 # numeric
 TASK=${1:-build}
-CHROOTUSER=${CHROOTUSER:-$TASK}
+TARGETDIR=${2:-/var/lib/chroot/${TASK}}
+#CHROOTUSER=${CHROOTUSER:-$TASK}
 CHROOTUID=${CHROOTUID:-616}
-CHROOTDIR=${CHROOTDIR:-/var/lib/chroot/${TASK}}
+CHROOTDIR=${CHROOTDIR:-$TARGETDIR}
 CHROOTDIST=${CHROOTDIST:-squeeze}
 MIRROR=${MIRROR:-http://ftp.no.debian.org/debian}
+conf=/etc/schroot/schroot.conf
 
-mkdir -p $CHROOTDIR
+#if [ -d $CHROOTDIR && ]
+if grep -q "\\[$TASK\\]" $conf
+   then
+   echo "$CHROOTDIR already exists, not strapping" >&2
+else 
+   mkdir -p $CHROOTDIR
 
-apt-get install debootstrap --yes
-debootstrap $CHROOTDIST $CHROOTDIR $MIRROR >/dev/null
-chmod 700 `dirname $CHROOTDIR`
+   apt-get install debootstrap --yes
+   debootstrap $CHROOTDIST $CHROOTDIR $MIRROR >/dev/null
+fi
+if ! grep -q "\\[$TASK\\]" $conf
+   then
+   echo "configure schroot for $TASK"
+   cat >> $conf << EOF
+[$TASK]
+type=directory
+directory=$CHROOTDIR
+groups=src,disk
+root-groups=root
+
+EOF
+else
+   echo "schroot already configured."
+fi
+
 
 if [ -z "$CHROOTUSER" ]
 then
-   echo "chroot without user" >&2
+   echo "set CHROOTUSER for uid/bindmount chroot" >&2
    exit 1
 fi
     
+chmod 700 `dirname $CHROOTDIR`
 # create chroot account (optional)
 groupadd -g $CHROOTUID $CHROOTUSER
 useradd -g $CHROOTUID -u $CHROOTUID $CHROOTUSER
