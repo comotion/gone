@@ -1,0 +1,73 @@
+#!/bin/sh -ex
+#
+# compile kismet R1
+#
+# comotion@krutt.org
+
+ver=2010-07-R1
+url=http://www.kismetwireless.net/code/kismet-$ver.tar.gz.asc
+
+sudo apt-get install libreadline6-dev libnl-dev
+
+wget=`which wget`
+if [ -z $wget ]
+   then
+   get="curl -O -R"
+fi
+
+checkhash() {
+  hash=$1
+  dest=$2
+  if [ "`echo $hash | wc -c`" -gt 33 ]
+     then
+     hashS=`sha1sum $dest | awk '{print $1 }'`
+  else
+     hashS=`md5sum $dest | awk '{ print $1 }'`
+  fi
+  if [ "$hash" != "$hashS" ]
+  then
+      return 1
+  else
+      return 0
+  fi
+}
+
+checkgpg(){
+  if ! gpg $1
+      then
+      echo "argh, bad file"
+      exit 2
+  fi
+}
+
+getpkg() {
+  url=$1
+  dest=$2
+  hash=$3
+  last=$4
+
+  if [ -z "$last" -a -f $dest ]
+    then
+    # if hash fails, try a download
+    if ! checkhash $hash $dest
+      then
+      getpkg $url $dest $hash last
+    fi
+    return
+  fi
+  
+  $wget $url -O $dest
+  if ! checkhash $hash $dest
+  then
+     echo "Hash check failed, aborting!" >&2
+     exit 1
+  fi
+
+}
+
+getpkg $luarocks_url luarocks-$luarocks_ver.tar.gz $luarocks_sha1
+tar xf luarocks.tar.gz
+cd luarocks-$luarocks_ver
+./configure --sysconfdir=/etc/luarocks
+make
+# ./tests/runtests.sh will grab and try all modules :-P
