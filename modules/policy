@@ -11,3 +11,13 @@ do
      chattr +a $dir/.bash_history
   fi
 done
+
+BLACKFILE=/etc/modprobe.d/blacklist.conf
+BLACKLIST='rds econet'
+for module in $BLACKLIST
+do
+    if [ ! grep -q "blacklist $module" $BLACKFILE ]
+        then
+        echo "blacklist $module" >> $BLACKFILE
+    fi
+done
