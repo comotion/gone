@@ -3,8 +3,9 @@
 # comotion@krutt.org
 
 PKG=prads
-REPO=git@github.com:gamelinux/$PKG.git
+REPO=git://github.com/gamelinux/$PKG.git
 
+apt-get install --yes libpcap-dev libpcre3-dev python-docutils
 mkdir -p inst
 cd inst
 if [ ! -d $PKG/.git ]
