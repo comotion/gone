@@ -35,7 +35,27 @@ if [ ! -d /service ]
    mkdir -p /service
 fi
 # make sure we don't install twice
-if ! grep -q svscanboot /etc/inittab
+if [ ! -f /etc/inittab ]
+   then
+   # fucking upstart.
+   # note Edgy had 'runlevel-2' not 'runlevel 2' nor 'runlevel [2345]'
+   # note older distros put this in /etc/event.d/svscanboot
+   cat >> /etc/init/svscanboot.conf << EOF
+# svscanboot - DJB's daemontools
+#
+# This service maintains svscanboot from the point the system is
+# started until it is shut down again.
+
+start on runlevel [2345]
+
+stop on shutdown
+
+respawn
+exec /usr/local/bin/svscanboot
+
+EOF
+
+elif ! grep -q svscanboot /etc/inittab
 then
    echo SV:123456:respawn:/usr/local/bin/svscanboot >> /etc/inittab
 fi
