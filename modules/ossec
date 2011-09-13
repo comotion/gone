@@ -53,7 +53,7 @@ else
 fi
 
 
-cd ossec-hids-*
+cd ossec-hids-$MAJ_VER
 # make setoneway setfullsubject
 sed ’s/maild.full_subject=1/maild.full_subject=0/g’ etc/internal_options.conf
 . ./install.sh
