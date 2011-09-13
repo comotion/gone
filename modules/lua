@@ -1,0 +1,110 @@
+#!/bin/sh -ex
+#
+# install lua + patches and needful things
+# = modules you might need as well as
+# .. LuaRocks. a "rock" is a lua "gem"
+# lua is nicest from source
+# all you need is a compiler :-)
+# comotion@krutt.org
+patchver=5.1.4-2
+
+lua_ver=5.1.4
+lua_sha1=2b11c8e60306efb7f0734b747588f57995493db7
+lua_url=http://www.lua.org/ftp/lua-$lua_ver.tar.gz
+luapatch_url=http://www.lua.org/ftp/patch-lua-5.1.4-2
+luapatch_sha1=fdb1e01231112e0a619057e45c404d47fd092c59
+
+luarocks_ver=2.0.3
+luarocks_url=http://luaforge.net/frs/download.php/4650/luarocks-2.0.3.tar.gz
+luarocks_sha1=1abe711223418a5d32cbd13430853a0395d187f1
+
+lua_ht=http://luaforge.net/frs/download.php/1513/helper-threads-r4.ZIP
+
+sudo apt-get install libreadline6-dev
+
+wget=`which wget`
+if [ -z $wget ]
+   then
+   get="curl -O -R"
+fi
+
+checkhash() {
+  hash=$1
+  dest=$2
+  if [ "`echo $hash | wc -c`" -gt 33 ]
+     then
+     hashS=`sha1sum $dest | awk '{print $1 }'`
+  else
+     hashS=`md5sum $dest | awk '{ print $1 }'`
+  fi
+  if [ "$hash" != "$hashS" ]
+  then
+      return 1
+  else
+      return 0
+  fi
+}
+
+checkgpg(){
+  if ! gpg $1
+      then
+      echo "argh, bad file"
+      exit 2
+  fi
+}
+
+getpkg() {
+  url=$1
+  dest=$2
+  hash=$3
+  last=$4
+
+  if [ -z "$last" -a -f $dest ]
+    then
+    # if hash fails, try a download
+    if ! checkhash $hash $dest
+      then
+      getpkg $url $dest $hash last
+    fi
+    return
+  fi
+  
+  $wget $url -O $dest
+  if ! checkhash $hash $dest
+  then
+     echo "Hash check failed, aborting!" >&2
+     exit 1
+  fi
+
+}
+
+# check if installed already
+mkdir -p inst
+cd inst
+if [ ! -d lua-$lua_ver ]
+then
+  getpkg $lua_url lua-$lua_ver.tar.gz $lua_sha1
+  tar xf lua-$lua_ver.tar.gz
+fi
+
+getpkg $luapatch_url lua.patch $luapatch_sha1
+
+cd lua-$lua_ver
+if [ ! -f lua-$patchver ]
+   then
+   cd src
+   patch -p0 < ../../lua.patch
+   touch lua-$patchver
+   cd ..
+fi
+
+make linux
+make install
+cd ..
+
+getpkg $luarocks_url luarocks-$luarocks_ver.tar.gz $luarocks_sha1
+tar xf luarocks.tar.gz
+cd luarocks-$luarocks_ver
+./configure --sysconfdir=/etc/luarocks
+make
+# ./tests/runtests.sh will grab and try all modules :-P
