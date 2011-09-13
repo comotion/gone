@@ -1,0 +1,38 @@
+#!/bin/sh
+# 
+# debootstrap a distro
+# comotion@krutt.org
+set -x
+DISTRO=$1
+if [ -z "$DISTRO" ]
+   then
+   DISTRO=squeeze
+fi
+# default is host arch
+ARCH=$2
+CHROOTSDIR=/var/lib/chroot
+TARGET=${3:-${DISTRO}${ARCH}}
+MIRROR=http://ftp.no.debian.org/debian
+
+if [ -d $CHROOTSDIR/$TARGET ]
+   then # this chroot already here
+   exit 0
+fi
+
+apt-get install debootstrap schroot
+
+debootstrap $DISTRO $CHROOTSDIR/$TARGET $MIRROR
+
+cat >> /etc/schroot/schroot.conf <<EOF
+[$TARGET]
+type=directory
+directory=$CHROOTSDIR/$TARGET
+groups=src,disk
+root-groups=root
+
+EOF
+schroot -c $TARGET apt-get update
+schroot -c $TARGET apt-get install devscripts
+
+
+
