@@ -1,9 +1,9 @@
-#!/bin/sh -x
+#!/bin/sh
 #
 # Re-apply gone configuration
 # comotion@krutt.org 2010
 
-gonedir=${1:-.}
+gonedir=${1:-/root/gone}
 
 cd $gonedir
 tf=`tempfile || exit 1`

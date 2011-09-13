@@ -7,6 +7,7 @@
 # run the defaults as well as host specific code
 
 host=`hostname -f`
+# if you want different module-specific defaults for $host, pass spec here
 case $host in
 	kwy.u*)
           spec=server
@@ -30,19 +31,21 @@ do_plural() {
 }
 
 echo "the default is never good enough"
-do_plural policy ubuntu lowpower dote_firewall
+do_plural git policy ubuntu lowpower dote_firewall prads
 
 echo "host specific defaults for $host"
 case $host in
-   bt*)
-      do_plural prads
+     bt*)
+      # not ossec
       ;;
      *)
       do_plural ossec
 esac
 
-echo " first: munin nagios "
-echo "multilog gitorius gitolite"
+echo "TODO gone:"
+echo "lua openframework irc"
+echo " first: munin nagios " # oh really?
+echo "multilog girocco"
 echo " then: logwatch rkhunter rootmail firewall"
 echo " esoteric: kexec prads and cronpull"
 echo " crucial: mail web php cache proxy dns"
