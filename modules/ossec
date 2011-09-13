@@ -27,7 +27,7 @@ USER_UPDATE_RULES=yes
 
 apt-get install build-essential
 
-MAJ_VER=2.5
+MAJ_VER=2.6
 SOURCE=http://www.ossec.net/files
 PKG=ossec-hids-latest
 workdir=$PWD
