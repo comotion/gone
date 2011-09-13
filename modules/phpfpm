@@ -1,0 +1,203 @@
+#!/bin/sh -x
+
+#
+# get and compile PHP with FPM and Suhosin patches
+# comotion@krutt.org
+
+#php_ver=-5.3.3
+#php_mirror=http://no2.php.net/get
+#php_md5=21ceeeb232813c10283a5ca1b4c87b48
+#php_retards=/from/this/mirror
+# 5.3.7 has a crypt-md5 bug, avoid it, grab a snap instead.
+
+php_ver=5.3-201108220830
+php_mirror=http://snaps.php.net
+php_md5=97afc03d4c9bc13bafe86c2e4c461b59
+
+
+suhosin_phpver=5.3.7
+suhosin_pver=0.9.10
+suhosin_ever=0.9.32.1
+suhosin_patch=http://download.suhosin.org/suhosin-patch-$suhosin_phpver-$suhosin_pver.patch.gz
+#suhosin_patch_md5=b66b27c43b1332400ef8982944c3b95b # 5.3.3
+suhosin_patch_md5=08582e502fed8221c6577042ca45ddb8
+
+suhosin_ext=http://download.suhosin.org/suhosin-$suhosin_ever.tar.gz
+suhosin_ext_md5=26a86f0f684a656c3e789e3eb4ec1db3
+
+apt-get install libxml2-dev libevent-dev libbz2-dev libpcre3-dev autoconf2.13 libcurl4-gnutls-dev libmcrypt-dev libpq-dev libmysqlclient-dev
+
+checkmd5() {
+  md5=$1
+  dest=$2
+  md5s=`md5sum $dest | awk '{ print $1 }'`
+  if [ "$md5" != "$md5s" ]
+  then
+      return 1
+  else
+      return 0
+  fi
+}
+
+checkgpg(){
+  if ! gpg $1
+      then
+      echo "argh, bad file"
+      exit 2
+  fi
+}
+
+getpkg() {
+  url=$1
+  dest=$2
+  md5=$3
+  last=$4
+
+  if [ -z "$last" -a -f $dest ]
+    then
+    # if md5 fails, try a download
+    if ! checkmd5 $md5 $dest
+      then
+      getpkg $url $dest $md5 last
+    fi
+    return
+  fi
+  
+  wget $url -O $dest
+  if ! checkmd5 $md5 $dest
+  then
+     echo "MD5 check failed, aborting!" >&2
+     exit 1
+  fi
+
+}
+
+# check if installed already
+
+# because php5.3.3 has fpm, no patching
+mkdir -p inst
+cd inst
+if [ ! -d php$php_ver ]
+then
+  getpkg $php_mirror/php$php_ver.tar.bz2$php_retards php$php_ver.tar.bz2 $php_md5
+  tar xf php$php_ver.tar.bz2
+fi
+
+getpkg $suhosin_patch suhosin.patch.gz $suhosin_patch_md5
+wget $suhosin_patch.sig -O suhosin.patch.gz.sig
+checkgpg suhosin.patch.gz.sig
+getpkg $suhosin_ext suhosin.tar.gz $suhosin_ext_md5
+wget $suhosin_ext.sig -O suhosin.tar.gz.sig
+checkgpg suhosin.tar.gz.sig
+
+cd php$php_ver
+
+if [ ! -f ./main/suhosin_patch.h ]
+    then
+    zcat ../suhosin.patch.gz | patch -p1
+fi
+./buildconf --force
+./configure --enable-fpm \
+            --enable-fastcgi \
+            --enable-suhosin \
+            --with-mcrypt \
+            --with-zlib \
+            --localstatedir=/var \
+            --mandir=/usr/share/man \
+            --disable-debug \
+            --with-regex=php \
+            --disable-rpath \
+            --disable-static \
+            --with-layout=GNU \
+            --with-pear=/usr/share/php \
+            --enable-calendar \
+            --enable-sysvsem \
+            --enable-sysvshm \
+            --enable-sysvmsg \
+            --enable-bcmath \
+            --with-bz2 \
+            --enable-ctype \
+            --without-gdbm \
+            --enable-exif \
+            --enable-ftp \
+            --with-gettext \
+            --enable-mbstring \
+            --disable-pdo \
+            --with-mysql \
+            --with-mysqli \
+            --with-pgsql \
+            --with-curl \
+            --disable-debug \
+            --enable-pic \
+            --enable-inline-optimization \
+            --with-xml \
+            --with-zlib \
+            --enable-sockets \
+            --enable-pcntl \
+            --enable-mbregex \
+            --with-mhash \
+            --enable-xslt \
+            --enable-memcache \
+            --enable-zip \
+            --with-pcre-regex \
+            --enable-shmop \
+            --enable-wddx \
+            #--with-onig=/usr \
+           #--with-libxml-dir=/usr \
+           #--with-zlib \
+           #--with-kerberos=/usr \
+           #--with-openssl=/usr \
+           #--enable-soap \
+           #--with-mhash=yes \
+           #--with-exec-dir=/usr/lib/php5/libexec \
+           #--with-system-tzdata \
+           #--with-config-file-path=/etc/php5/ \
+           #--without-mm \
+           #--with-curl=shared,/usr \
+           #--with-zlib-dir=/usr \
+           #--with-jpeg-dir=shared,/usr \
+           #--with-png-dir=shared,/usr \
+           #--with-imap=shared,/usr \
+           #--with-imap-ssl \
+           #--with-ttf=shared,/usr \
+           #--with-ldap=shared,/usr \
+           #--with-ldap-sasl=/usr \
+           #--with-mcrypt=shared,/usr \
+           #--with-mysql=shared,/usr \
+           #--with-mysqli=shared,/usr/bin/mysql_config \
+           #--with-pspell=shared,/usr \
+           #--with-recode=shared,/usr \
+           #--with-xsl=shared,/usr \
+           #--with-snmp=shared,/usr \
+           #--with-tidy=shared,/usr \
+           #--with-xmlrpc=shared \
+           #--enable-pdo=shared \
+           #--without-pdo-dblib \
+           #--with-pdo-mysql=shared,/usr \
+           #--with-pdo-pgsql=shared,/usr/bin/pg_config \
+           #--with-pdo-sqlite=shared,/usr \
+           #--with-pdo-dblib=shared,/usr
+            #--with-iconv \
+            #--enable-intl=shared \
+            #--with-mssql=shared,/usr \
+            #--with-gmp=shared,/usr \
+            #--with-gd=shared,/usr --enable-gd-native-ttf \
+            #--with-pgsql=shared,/usr PGSQL_INCLUDE=`pg_config --includedir` \
+            #--with-sqlite=shared,/usr \
+            #--with-sqlite3=shared,/usr \
+            #--with-unixODBC=shared,/usr \
+            #--with-db4 \
+            #--with-qdbm=/usr \
+            #--with-enchant=shared,/usr \
+            #--with-xpm-dir=shared,/usr/X11R6 \
+            #--with-pdo-odbc=shared,unixODBC,/usr \
+            #--with-t1lib=shared,/usr \
+            #--with-freetype-dir=shared,/usr \
+
+make -j3
+# takes foreever
+# make test
+make install
+
+# php.ini php-fpm.conf -> /etc/php/
+
