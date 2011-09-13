@@ -1,0 +1,59 @@
+#!/bin/sh
+
+#
+# install rtorrent
+# comotion@krutt.org
+
+sudo apt-get remove rtorrent libtorrent*
+sudo apt-get install build-essential autoconf automake libtool libncurses5-dev libncursesw5-dev libcurl4-
+apt-get install varnish
+
+mkdir -p inst
+cd inst
+if [ ! -d xmlrpc-c ]
+   then
+   git svn clone -r HEAD https://xmlrpc-c.svn.sourceforge.net/svnroot/xmlrpc-c/advanced/ xmlrpc-c
+   
+fi
+
+cd xmlrpc-c
+svn up
+./configure --disable-cplusplus
+
+make
+
+sudo make install
+
+cd ..
+
+if [ -d rtorrent ]
+   then
+   git svn clone -r HEAD svn://rakshasa.no/libtorrent/trunk rtorrent
+fi
+cd rtorrent
+
+if [ ! -f canvas-color_1191.patch ]
+   then
+   wget http://www.simplylinux.ch/rtorrent/canvas-color_1191.patch
+
+   patch -p0 < canvas-color_1191.patch
+fi
+
+if [ -f trackerinfo.patch ]
+   then
+   wget http://www.simplylinux.ch/rtorrent/trackerinfo.patch
+
+   patch -p0 < trackerinfo.patch
+fi
+
+for i in libtorrent rtorrent; do
+cd $i
+
+./autogen.sh
+
+./configure --with-xmlrpc-c
+
+make
+
+sudo make install
+done
