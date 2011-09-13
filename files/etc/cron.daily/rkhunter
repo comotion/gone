@@ -1,0 +1,37 @@
+#!/bin/sh
+
+RKHUNTER=/usr/bin/rkhunter
+
+test -x $RKHUNTER || exit 0
+
+# source our config
+. /etc/default/rkhunter
+
+if [ -z "$NICE" ]; then
+    NICE=0
+fi
+
+case "$CRON_DAILY_RUN" in
+     [Yy]*)
+       	OUTFILE=`mktemp` || exit 1
+        /usr/bin/nice -n $NICE $RKHUNTER --cronjob --report-warnings-only --appendlog > $OUTFILE
+          if grep -q '^Warning: The file properties have changed:' $OUTFILE
+             then
+             echo "Cron is updating the database so this nag mail doesn't come back" >> $OUTFILE
+             rkhunter --propupd
+          fi
+        if [ -s "$OUTFILE" ]; then
+          (
+            echo "Subject: [rkhunter] $(hostname -f) - Daily report"
+            echo "To: $REPORT_EMAIL"
+            echo ""
+            cat $OUTFILE
+          ) | /usr/sbin/sendmail $REPORT_EMAIL
+        fi
+        rm -f $OUTFILE
+        ;;
+      *)
+       exit 0
+       ;;
+esac
+
