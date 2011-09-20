@@ -1,0 +1,34 @@
+#!/bin/sh
+#
+# Install djbdns + deps and set up pussydns over git
+
+# if you are multi-homed, you need to set this
+# otherwise where would we be?
+MYADDR=$1
+set -e
+
+run_module() {
+  module=$1
+  if [ -f modules/$module ]
+    then
+    echo "*** $module  ***"
+    modules/$module
+  else
+    echo "[!] failed. modules/$module missing!"
+    exit 1
+  fi
+}
+
+run_module daemontools
+run_module ucspi
+run_module tinydns
+echo ... now configure your service:
+echo dnscache-conf Gdnscache Gdnslog /etc/dnscache 10.53.0.1
+echo ln -s /etc/dnscache/ /service/dnscache
+echo tinydns-conf Gtinydns Gdnslog /etc/tinydns $MYADDR
+echo ln -s /etc/tinydns/ /service/tinydns
+
+# checkout pussydns
+# checkout dns repos
+
+
