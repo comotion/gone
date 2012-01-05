@@ -16,7 +16,6 @@ fi
 cd $PKG
 git pull
 
-make clean
 make
 make install
 
