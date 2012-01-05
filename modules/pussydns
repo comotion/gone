@@ -27,8 +27,17 @@ echo dnscache-conf Gdnscache Gdnslog /etc/dnscache 10.53.0.1
 echo ln -s /etc/dnscache/ /service/dnscache
 echo tinydns-conf Gtinydns Gdnslog /etc/tinydns $MYADDR
 echo ln -s /etc/tinydns/ /service/tinydns
+echo ln -s /etc/tinydns/root /etc/dns
 
-# checkout pussydns
-# checkout dns repos
+echo "checkout pussydns"
+dns@repo.delta9.pl:/dns/pussydns/
 
+ln -s /etc/dns/pussydns/pussydns.sh /etc/dns/pussydns.sh
+ln -s /etc/dns/zones /etc/dns/pussydns/zones
+
+echo "checkout your dns repos"
+for repo in $REPOS
+do
+    git clone $repo
+done
 
