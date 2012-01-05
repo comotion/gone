@@ -1,0 +1,16 @@
+TODO gone:
+
+lua-rocks openframework irc-bnc
+ first: munin nagios " # oh really?
+multilog girocco
+ then: logwatch rootmail
+ esoteric: kexec
+ optional: integrate with slaughter, chef, puppet
+distributed shell nodes
+ advanced: grsecurity, chrooted services, snort, prey
+
+Priorities:
+ - mail system w/ test
+ +- gmail killer
+ - pussydns dyndns w/ test
+ - MONITORING: munin nagios or bjarni's soln

@@ -41,14 +41,3 @@ case $host in
      *)
       do_plural ossec
 esac
-
-echo "TODO gone:"
-echo "lua openframework irc"
-echo " first: munin nagios " # oh really?
-echo "multilog girocco"
-echo " then: logwatch rkhunter rootmail firewall"
-echo " esoteric: kexec prads and cronpull"
-echo " crucial: mail web php cache proxy dns"
-echo " optional: integrate with slaughter, chef, puppet"
-echo "distributed shell nodes"
-echo " advanced: grsecurity, chrooted services, snort, prey"
