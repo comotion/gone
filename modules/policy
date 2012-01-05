@@ -16,8 +16,14 @@ BLACKFILE=/etc/modprobe.d/blacklist.conf
 BLACKLIST='rds econet'
 for module in $BLACKLIST
 do
-    if [ ! grep -q "blacklist $module" $BLACKFILE ]
+    if ! grep -q "blacklist $module" $BLACKFILE
         then
         echo "blacklist $module" >> $BLACKFILE
     fi
 done
+
+if [ -f /etc/default/grub ] && ! grep -q supports_quiet /etc/default/grub
+    then
+    echo 'supports_quiet=false' >> /etc/default/grub
+    update-grub
+fi
