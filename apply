@@ -115,21 +115,25 @@ match_copy () {
    # files should be relative paths
    for file in $FILES
    do
+      if [ ! -f /$file ]
+         then
+         if [ -d `dirname /$file` ]
+            then
+            cp -av $file /$file
+         else
+            echo "not installing $file, no target dir"
+         fi
+         continue
+      fi
       # XXX: remember attribs, uid/gid, extattr and selinux context
       # any and all uniquely definable characteristics of the file
       # problem: bash sux for this :-(
-      stato=
-      stats=
-      attrs=
-      stati=`stat -t $file` # terse pickle
+      #stati=`stat -t $file` # terse pickle
       statd=`stat -c '%a %u %g %C' $file 2>/dev/null`
-      if [ -f /$file ]
-         then
-            stato=`stat -t /$file` # terse target
-            stats=`stat -c '%a %u %g %C' /$file 2>/dev/null`
-            #stata=( $stats ) # an array. arrays suck in dash
-            attrs=`lsattr "/$file" | awk '{print $1}'`
-      fi
+      #stato=`stat -t /$file` # terse target
+      stats=`stat -c '%a %u %g %C' /$file 2>/dev/null`
+      #stata=( $stats ) # an array. arrays suck in dash
+      attrs=`lsattr "/$file" | awk '{print $1}'`
       # compare the pickle with the target
       echo "/$file $stats $attrs"
       echo " $file.$statd"
