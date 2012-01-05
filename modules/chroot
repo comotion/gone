@@ -12,6 +12,7 @@ CHROOTUID=${CHROOTUID:-616}
 CHROOTDIR=${CHROOTDIR:-$TARGETDIR}
 CHROOTDIST=${CHROOTDIST:-squeeze}
 MIRROR=${MIRROR:-http://ftp.no.debian.org/debian}
+ARCH=${ARCH:-i386}
 conf=/etc/schroot/schroot.conf
 
 #if [ -d $CHROOTDIR && ]
@@ -22,7 +23,7 @@ else
    mkdir -p $CHROOTDIR
 
    apt-get install debootstrap --yes
-   debootstrap $CHROOTDIST $CHROOTDIR $MIRROR >/dev/null
+   debootstrap --arch=$ARCH $CHROOTDIST $CHROOTDIR $MIRROR >/dev/null
 fi
 if ! grep -q "\\[$TASK\\]" $conf
    then
