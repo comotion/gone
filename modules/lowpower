@@ -23,9 +23,16 @@ if [ -f $BATT ] && grep '^charging state: *dis' $BATT
 then
    HAVE_BATT=1
    grep '^present rate:' $BATT
+else
+    BATT=/sys/class/power_supply/BAT0/power_now
+    if [ -f $BATT ]
+        then
+        echo "present rate: `cat $BATT`"
+        HAVE_BATT=1
+    fi
 fi
 ./lowpower >/dev/null 2>lowpower_debug.log
-[ $HAVE_BATT = 1 ] && grep '^present rate:' $BATT && echo "this is a one-minute average, check $BATT soon"
+[ $HAVE_BATT = 1 ] && egrep '^(present rate:|\d+)' $BATT && echo "this is a one-minute average, check $BATT soon"
 
 case `hostname -f` in
    wasp*)
