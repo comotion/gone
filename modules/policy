@@ -34,16 +34,16 @@ if [ -f $c ]
     then
     for key in VisualHostKey VerifyHostKeyDNS
     do
-        if ! grep "^ *$key" $c
+        if ! grep -q "^ *$key" $c
             then
             echo "$key yes" >> $c
         fi
     done
-    if ! grep '^ *Ciphers' $c
+    if ! grep -q '^ *Ciphers' $c
         then
         echo 'Ciphers aes256-ctr,aes192-ctr,aes128-ctr,arcfour256,aes128-cbc' >> $c
     fi
-    if ! grep '^ *MACs' $c
+    if ! grep -q '^ *MACs' $c
         then
         echo 'MACs hmac-md5,hmac-sha1,umac-64@openssh.com,hmac-ripemd160' >> $c
     fi
