@@ -1,6 +1,7 @@
 #!/bin/sh
 # make sure what goes where
 #
+# try hard to only overwrite silly defaults
 # comotion@krutt.org
 
 for user in root kwy comotion
@@ -27,3 +28,26 @@ if [ -f /etc/default/grub ] && ! grep -q supports_quiet /etc/default/grub
     echo 'supports_quiet=false' >> /etc/default/grub
     update-grub
 fi
+
+c=/etc/ssh/ssh_config
+if [ -f $c ]
+    then
+    for key in VisualHostKey VerifyHostKeyDNS
+    do
+        if ! grep "^ *$key" $c
+            then
+            echo "$key yes" >> $c
+        fi
+    done
+    if ! grep '^ *Ciphers' $c
+        then
+        echo 'Ciphers aes256-ctr,aes192-ctr,aes128-ctr,arcfour256,aes128-cbc' >> $c
+    fi
+    if ! grep '^ *MACs' $c
+        then
+        echo 'MACs hmac-md5,hmac-sha1,umac-64@openssh.com,hmac-ripemd160' >> $c
+    fi
+fi
+
+
+
