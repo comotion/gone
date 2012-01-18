@@ -4,6 +4,13 @@
 # 
 # bottom up is better than top down
 
+# the two keys I use for signing gone manifests
+#  add your own key here
+# 107B264D # comotion@krutt.org
+# CE49888C # kwy@redpill-linpro.com
+
+GPG_KEYS="107B264D CE49888C"
+
 usage () {
    echo "git clone repo/gone ; cd gone; ./apply"
    echo
@@ -59,6 +66,11 @@ integrity_check () {
       echo "gpg not available, can't guarantee integrity"
       exit 4
    fi
+   for key in $GPG_KEYS
+      do
+      gpg --recv-key $key
+   done
+
    for method in $check_methods
    do
       file=$check_filename.$method
