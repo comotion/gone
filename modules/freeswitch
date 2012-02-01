@@ -1,0 +1,29 @@
+#!/bin/sh
+# grab and install freeswitch
+# comotion@krutt.org
+
+PKG=freeswitch
+REPO=git://git.freeswitch.org/freeswitch.git
+CONTRIB=git://git.freeswitch.org/freeswitch-contrib.git
+CFG=git://git.freeswitch.org/freeswitch-sample-configs.git
+
+apt-get install --yes autoconf automake g++ git-core libjpeg62-dev libncurses5-dev libtool make python-dev gawk pkg-config gnutls-bin
+mkdir -p inst
+cd inst
+if [ ! -d $PKG/.git ]
+then
+   git clone $REPO
+   cd $PKG
+   ./bootstrap.sh
+   ./configure
+   sed -i 's/^#\(.*flite.\)$/\1/' modules.conf
+   make all cd-sounds-install cd-moh-install && make install
+   cd -
+else
+
+   cd $PKG
+   git pull
+   make current
+fi
+
+
