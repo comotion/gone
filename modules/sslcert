@@ -1,0 +1,41 @@
+#!/bin/sh
+# make a self-signed cert
+#
+# comotion@krutt.org
+
+NAME=${1:-`hostname`}
+
+# got template?
+if [ ! -f /etc/ssl/openssl.cnf ]
+   then
+   make-ssl-cert generate-default-snakeoil
+fi
+
+# got key?
+FBASE=/etc/ssl/private/$NAME
+KEY=$FBASE.key
+if [ ! -f $KEY ]
+   then
+   openssl genrsa -des3 -out $KEY
+fi
+
+# got csr?
+CSR=$FBASE.csr
+if [ ! -f $CSR ]
+   then
+   openssl req -new -key $KEY -out $CSR
+fi
+
+# passphrase removal phase
+if [ ! -f $KEY.org ]
+   then
+   cp $KEY $KEY.org
+   openssl rsa -in $KEY.org -out $KEY
+fi
+
+# self-signed cert
+CERT=$FBASE.crt
+if [ ! -f $CERT ]
+   then
+   openssl x509 -req -days 365 -in $CSR -signkey $KEY -out $CERT
+fi
