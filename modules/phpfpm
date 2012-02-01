@@ -1,18 +1,21 @@
-#!/bin/sh -x
+#!/bin/sh
 
 #
 # get and compile PHP with FPM and Suhosin patches
 # comotion@krutt.org
 
-#php_ver=-5.3.3
-#php_mirror=http://no2.php.net/get
-#php_md5=21ceeeb232813c10283a5ca1b4c87b48
-#php_retards=/from/this/mirror
-# 5.3.7 has a crypt-md5 bug, avoid it, grab a snap instead.
+set -ex
 
-php_ver=5.3-201108220830
-php_mirror=http://snaps.php.net
-php_md5=97afc03d4c9bc13bafe86c2e4c461b59
+php_ver=-5.3.8
+php_mirror=http://no2.php.net/get
+php_md5=704cd414a0565d905e1074ffdc1fadfb
+php_retards=/from/this/mirror
+# 5.3.7 has a crypt-md5 bug, avoid it.
+
+#php_ver=5.3-201108220830
+#php_mirror=http://snaps.php.net
+#php_md5=97afc03d4c9bc13bafe86c2e4c461b59
+
 
 
 suhosin_phpver=5.3.7
@@ -98,9 +101,7 @@ if [ ! -f ./main/suhosin_patch.h ]
 fi
 ./buildconf --force
 ./configure --enable-fpm \
-            --enable-fastcgi \
-            --enable-suhosin \
-            --with-mcrypt \
+           --with-mcrypt=shared,/usr \
             --with-zlib \
             --localstatedir=/var \
             --mandir=/usr/share/man \
@@ -128,23 +129,25 @@ fi
             --with-pgsql \
             --with-curl \
             --disable-debug \
-            --enable-pic \
             --enable-inline-optimization \
-            --with-xml \
-            --with-zlib \
             --enable-sockets \
             --enable-pcntl \
             --enable-mbregex \
             --with-mhash \
-            --enable-xslt \
-            --enable-memcache \
+            --with-xsl=shared,/usr \
             --enable-zip \
             --with-pcre-regex \
             --enable-shmop \
             --enable-wddx \
+            --with-zend-vm \
+            --with-gd=shared,/usr \
+            --enable-gd-native-ttf \
+           --with-jpeg-dir=shared,/usr \
+           --with-png-dir=shared,/usr \
+           --with-libxml-dir=/usr \
+           --with-zlib-dir=/usr \
+            --with-freetype-dir=shared,/usr \
             #--with-onig=/usr \
-           #--with-libxml-dir=/usr \
-           #--with-zlib \
            #--with-kerberos=/usr \
            #--with-openssl=/usr \
            #--enable-soap \
@@ -154,20 +157,14 @@ fi
            #--with-config-file-path=/etc/php5/ \
            #--without-mm \
            #--with-curl=shared,/usr \
-           #--with-zlib-dir=/usr \
-           #--with-jpeg-dir=shared,/usr \
-           #--with-png-dir=shared,/usr \
            #--with-imap=shared,/usr \
            #--with-imap-ssl \
-           #--with-ttf=shared,/usr \
            #--with-ldap=shared,/usr \
            #--with-ldap-sasl=/usr \
-           #--with-mcrypt=shared,/usr \
            #--with-mysql=shared,/usr \
            #--with-mysqli=shared,/usr/bin/mysql_config \
            #--with-pspell=shared,/usr \
            #--with-recode=shared,/usr \
-           #--with-xsl=shared,/usr \
            #--with-snmp=shared,/usr \
            #--with-tidy=shared,/usr \
            #--with-xmlrpc=shared \
@@ -181,7 +178,6 @@ fi
             #--enable-intl=shared \
             #--with-mssql=shared,/usr \
             #--with-gmp=shared,/usr \
-            #--with-gd=shared,/usr --enable-gd-native-ttf \
             #--with-pgsql=shared,/usr PGSQL_INCLUDE=`pg_config --includedir` \
             #--with-sqlite=shared,/usr \
             #--with-sqlite3=shared,/usr \
@@ -192,10 +188,12 @@ fi
             #--with-xpm-dir=shared,/usr/X11R6 \
             #--with-pdo-odbc=shared,unixODBC,/usr \
             #--with-t1lib=shared,/usr \
-            #--with-freetype-dir=shared,/usr \
+
+echo "OMG L4m3. Plz chx if features are supported!"
+read foo
 
 make -j3
-# takes foreever
+# testing takes foreever
 # make test
 make install
 
