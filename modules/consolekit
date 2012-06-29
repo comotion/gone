@@ -1,0 +1,29 @@
+#!/bin/sh
+# make a studded leather armour against the thickness of consolekit
+#
+# comotion@krutt.org 2010-11-05
+file=/usr/sbin/console-kit-daemon
+#undo previous damage
+if [ -r $file.real ]
+   then
+   chattr -i $file
+   rm $file
+   mv $file.real $file
+fi
+
+# the real hack disables dbus autostart of console-kit-daemon
+$srcfile=/usr/share/dbus-1/system-services/org.freedesktop.ConsoleKit.service
+destdir=/usr/local/share/dbus-1/system-services
+hackfile=org.freedesktop.ConsoleKit.service
+
+if [ ! -f $srcfile ]
+    then
+    exit 0 # no service, no point
+fi
+
+if [ ! -f $destdir/$hackfile ]
+    then
+    mkdir -p $destdir
+    cp $srcfile $destdir
+    echo Exec=/bin/false >> $destdir/$hackfile
+fi
