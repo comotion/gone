@@ -1,0 +1,8 @@
+# blacklist
+# these guys do not deserve our trust
+sed -ri '/comodo|utn|addtrust/Is/^!*/!/' /etc/ca-certificates.conf
+# there are more that should not be trusted
+
+# other certs copied from files to etc/ssl/certs/
+
+update-ca-certificates
