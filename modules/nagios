@@ -1,0 +1,7 @@
+#!/bin/sh
+#
+# grab and install nagios server
+# comotion@krutt.org
+
+apt-get install --yes unbound-host nagios3
+
