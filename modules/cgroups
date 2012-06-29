@@ -1,0 +1,63 @@
+#!/bin/sh
+#
+# setup lxc/cgroups for jails etc
+# this is de-facto xen kvm openvz vserver chroot killer :-P
+# todo: much
+# http://sourceforge.net/mailarchive/forum.php?thread_name=4BA75A14.9070105@free.fr&forum_name=lxc-users
+# lxc-attach
+# comotion@krutt.org
+
+# req'd
+apt-get install lxc
+
+if [ ! -d /cgroup ]
+   then
+   mkdir /cgroup
+   echo 'none /cgroup cgroup defaults 0 0' >> /etc/fstab
+   mount /cgroup
+fi
+
+# you will(might?) need a bridge:
+# brctl addbr br0
+# ifconfig br0 192.168.2.1
+
+# major namespaces:
+# UTSNAME PID IPC USER NETWORK /PROC RO BIND MOUNT
+# now configure the cgroups
+cat << EOF
+lxc.utsname = container_name
+lxc.tty = 4
+lxc.network.type = veth
+lxc.network.flags = up
+lxc.network.link = br0
+lxc.network.name = eth0
+lxc.network.mtu = 1500
+lxc.network.ipv4 = your_network_here #for example 192.168.0.0/24
+lxc.rootfs = /full/path/to/rootfs.container_name
+lxc.mount = /full/path/to/fstab.container_name
+lxc.cgroup.devices.deny = a
+# /dev/null and zero
+lxc.cgroup.devices.allow = c 1:3 rwm
+lxc.cgroup.devices.allow = c 1:5 rwm
+# consoles
+lxc.cgroup.devices.allow = c 5:1 rwm
+lxc.cgroup.devices.allow = c 5:0 rwm
+lxc.cgroup.devices.allow = c 4:0 rwm
+lxc.cgroup.devices.allow = c 4:1 rwm
+# /dev/{,u}random
+lxc.cgroup.devices.allow = c 1:9 rwm
+lxc.cgroup.devices.allow = c 1:8 rwm
+# /dev/pts/* - pts namespaces are "coming soon"
+lxc.cgroup.devices.allow = c 136:* rwm
+lxc.cgroup.devices.allow = c 5:2 rwm
+# rtc
+lxc.cgroup.devices.allow = c 254:0 rwm
+EOF
+
+# lxc-create -f/path/to/config -n name of container
+# lxc-start -n name
+# lxc-stop -n name
+# lxc-destroy -n name
+
+#git clone git://git.nigel.mcnie.name/lxc-debian.git
+echo see /usr/share/doc/lxc/examples
