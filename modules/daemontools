@@ -3,7 +3,7 @@
 # comotion@krutt.org 2011-05-29
 
 PKG=daemontools-encore
-REPO=https://github.com/bruceg/daemontools-encore.git
+REPO=git://github.com/bruceg/daemontools-encore.git
 # used to be available at
 #REPO=http://untroubled.org/git/daemontools-encore.git
 

@@ -3,7 +3,7 @@
 # comotion@krutt.org 2011-05-29
 
 PKG=ucspi-tcp
-REPO=https://github.com/comotion/$PKG.git
+REPO=git://github.com/comotion/$PKG.git
 
 mkdir -p inst
 cd inst

@@ -29,12 +29,13 @@ apt-get install build-essential
 
 MAJ_VER=2.6
 SOURCE=http://www.ossec.net/files
-PKG=ossec-hids-latest
+PKG=ossec-hids-2.6
 workdir=$PWD
 
+set -x
 mkdir -p inst
 cd inst
-wget $SOURCE/${PKG%latest}${MAJ_VER}_checksum.txt -qO - | grep 'SHA1.*gz' | sed 's/hids.*tar.gz/hids-latest.tar.gz/' | tail -n 1 > ossec-hids-latest_sum.txt
+wget $SOURCE/${PKG%latest}_checksum.txt -qO - | grep 'SHA1.*gz' | sed 's/hids.*tar.gz/hids-latest.tar.gz/' | tail -n 1 > ossec-hids-latest_sum.txt
 if [ -f ossec-hids-sum.txt ] && diff -q ossec-hids-sum.txt ossec-hids-latest_sum.txt && [ -d /var/ossec ]
 then
    echo latest ossec already installed
@@ -47,7 +48,7 @@ else
    # Next run should have this file
    echo "installing new version of ossec"
    cp ossec-hids-latest_sum.txt ossec-hids-sum.txt
-   wget -c $SOURCE/${PKG}.tar.gz
+   wget -c $SOURCE/${PKG}.tar.gz -O ossec-hids-latest.tar.gz
    sha1sum -c ossec-hids-sum.txt || exit 0
    tar xf ossec-hids-latest.tar.gz
 fi

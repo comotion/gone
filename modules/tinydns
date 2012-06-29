@@ -5,7 +5,7 @@
 # depends on daemontools and ucspi-tcp (+ipv6?)
 
 PKG=djbdns
-REPO=https://github.com/comotion/$PKG.git
+REPO=git://github.com/comotion/$PKG.git
 
 CACHEUSER=Gdnscache
 CACHEUID=5301

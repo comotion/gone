@@ -28,6 +28,11 @@ echo ln -s /etc/dnscache/ /service/dnscache
 echo tinydns-conf Gtinydns Gdnslog /etc/tinydns $MYADDR
 echo ln -s /etc/tinydns/ /service/tinydns
 echo ln -s /etc/tinydns/root /etc/dns
+echo axfrdns-conf Gaxfrdns Gdnslog /etc/axfrdns /etc/tinydns $MYADDR
+echo "echo ':allow,AXFR=""' > /etc/axfrdns/tcp"
+echo "cd /etc/axfrdns && make"
+echo "cd /services && ln -s /etc/axfrdns"
+echo "dig axfr +tcp @$MYADDR my.domain.foo"
 
 echo "checkout pussydns"
 dns@repo.delta9.pl:/dns/pussydns/
