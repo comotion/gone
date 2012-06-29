@@ -1,0 +1,35 @@
+#!/bin/sh
+
+# contributed by anonymust
+#
+# dm-crypt'ed main partition, no swap, a CPU which supports directed IO so you can have a container solely for
+#  networking devices, commands in init scripts to change/randomize MACs, HD serials, 
+
+#21:53:33 AnonMousS | the must important thing experts can do now is offer a safe communication environment for activist
+# note to self: look at TAIM
+
+# privoxy tor polipo
+# other ideas: wipe cached keys, run diskless, last ditch device wipe
+
+# 21:51:20  fread-om | ifconfig <if> down; ifconfig <if> hw ether <newmac>; ifconfig <if> up
+ip link | egrep -v '^(lo|vir)' | while read line
+do
+   mac=$(dd if=/dev/random count=1 status=noxfer 2>/dev/null | xxd -g 1 -l 6 -a  | sed -e 's/^[0-9]*: *//' -e 's/   *.*//' -e 's/ /:/g')
+   iface=$(echo $line | awk '{ print $2 }' | sed 's/://')
+   ipa=$(ip a s dev $iface | grep 'inet ' | cut -f 2 -d ' ')
+   ip=$(echo $ipa | sed 's/\/.*//')
+   # be brutal
+   down=$(echo $line | grep 'state DOWN')
+   [ -z "$down" ] && ifconfig $iface down
+   ifconfig $iface hw ether $mac
+   if [ -z "$down" ]
+      then
+      ifconfig $iface up
+      [ -n "$ip" ] && ip a a $ip dev $iface
+   fi
+done
+
+   
+
+
+
