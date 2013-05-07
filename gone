@@ -60,7 +60,7 @@ do_args() {
          -i|--ignore-integrity)
             integrity=yes
             ;;
-         -c|--check-gpg)
+         -c|--check)
             action=integrity
             ;;
          -d|--dry-run)
@@ -73,7 +73,8 @@ do_args() {
             sign=yes
             ;;
          -*)
-            die "Unknown argument: $1"
+            echo "Unknown argument: $1" >&2
+            exit 1
             ;;
          *)
             args="$args $1"

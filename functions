@@ -28,11 +28,6 @@ dosync()  {
    match_copy modules/$1 $check_methods
 }
 
-die() {
-    echo "$@" >&2
-    exit 1
-}
-
 # Levels:
 # 0: fatal
 # 1: error
