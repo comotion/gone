@@ -11,8 +11,8 @@ generate() {
 		find $1 -type f |
 		   egrep -v '^\./(inst|\.|manifest\.|modules/[^/]+/files)' | sort |
 		   xargs $method > $1/manifest.$method
-	else
-		echo " [WARN] Refusing to generate manifest for $1, not a directory"
+#	else
+#		echo " [WARN] Refusing to generate manifest for $1, not a directory"
 	fi
 }
 
