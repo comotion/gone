@@ -18,13 +18,13 @@ usage () {
    echo
    echo " -v, --verbose      Increase verbosity level"
    echo
-   echo " -i, --ignore-gpg   Don't perform GPG integrity check"
+   echo " -n, --no-check     Don't perform integrity checks"
    echo
-   echo " -c, --check-gpg    Check manifest GPG signatures (implies --dry-run)"
+   echo " -c, --check        Only check manifest, don't apply anything"
    echo
-   echo " -g, --gen          Create a manifest"
+   echo " -g, --gen          Generate manifests for configuration"
    echo
-   echo " -s, --sign         Sign manifests"
+   echo " -s, --sign-gpg     Sign manifests"
    echo
    echo " -m <method>, --method <method>"
    echo "                    Allow following methods"
@@ -57,8 +57,8 @@ do_args() {
          -v|--verbose)
             verbosity=$(( $verbosity + 1 ))
             ;;
-         -i|--ignore-integrity)
-            integrity=yes
+         -n|--no-check)
+            integrity=no
             ;;
          -c|--check)
             action=integrity
@@ -69,7 +69,7 @@ do_args() {
          -g|--gen)
             action=generate
             ;;
-         -s|--sign)
+         -s|--sign-gpg)
             sign=yes
             ;;
          -*)
@@ -121,20 +121,19 @@ log 4 "args: $args"
 # there is a multiuser use case for signing some files with a different key.
 PASSED=
 integrity_check () {
-   if [ -z "`which gpg`" ]
-   then
-      log 1 "gpg not available, can't guarantee integrity" >&2
-      exit 4
-   fi
-   for key in $GPG_KEYS; do
-      if [ $verbosity -gt 3 ]; then
-          gpg --recv-key $key
-      elif [ $verbosity -lt 3 ]; then
-          gpg --recv-key --quiet $key
-      else
-          gpg --recv-key $key
+   if [[ "yes" == $integrity ]]; then
+      if [ -z "`which gpg`" ]; then
+         log 1 "gpg not available, can't guarantee integrity" >&2
+         exit 4
       fi
-   done
+      for key in $GPG_KEYS; do
+         if [ $verbosity -lt 4 ]; then
+             gpg --recv-key --quiet $key
+         else
+             gpg --recv-key $key
+         fi
+      done
+   fi
 
    log 4 "verifying manifest w/"$methods
    for method in $methods
@@ -150,18 +149,18 @@ integrity_check () {
          fi
 
          [ -f $file ] && mv $file $file.old
-         gpg --yes --output $file -d $file.gpg || exit 7
+		 gpg --yes --output $file -d $file.gpg || exit 7
          diff $file.old $file
 
          # ah the shittiness of bash exit codes
-         if $method $quiet -c $file
+         if $method --quiet -c $file
          then
             # only need to check strongest method available
             # cryptographically useless to check weaker methods once we pass
             PASSED="$method"
             break
          else
-            log 1 "integrity check failed, method '$method' not available" >&2
+            log 1 "$method: file $file  " >&2
             exit 2
          fi
       fi
@@ -279,7 +278,7 @@ generate_manifest() {
              xargs $method > $1/manifest.$method
           [[ "yes" == "$sign" ]] && gpg --sign $1/manifest.$method
        else
-          log 3 "Refusing to generate manifest for $1, not a directory"
+          log 4 "Refusing to generate manifest for $1, not a directory"
        fi
     }
 
@@ -305,6 +304,7 @@ case $action in
    apply)
       # kick the script - basically what chef, slaughter and puppet does
       # execute all the modules and then sync any file non-module files
+      integrity_check $args
       foreach dosync $MODULES
       match_copy . $check_methods
       ;;
