@@ -1,13 +1,10 @@
 #!/bin/sh
 
-GPG_KEYS="107B264D CE49888C"
+GPG_KEYS="107B264D CE49888C 845B49F2"
 DEFAULT_SPEC=
 MODULES=""
 
-fqdn=`hostname -f`
-host=`hostname`
 spec=
 
-# comment the methods out to disable integrity checking
-check_methods='sha512sum sha384sum sha256sum sha1sum md5sum'
-check_filename=manifest
+# Specify the wanted checksum methods defaults: sha512sum sha384sum sha256sum sha1sum md5sum
+#methods='sha512sum'

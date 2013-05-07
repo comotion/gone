@@ -22,6 +22,13 @@ usage () {
    echo
    echo " -c, --check-gpg    Check manifest GPG signatures (implies --dry-run)"
    echo
+   echo " -g, --gen          Create a manifest"
+   echo
+   echo " -s, --sign         Sign manifests"
+   echo
+   echo " -m <method>, --method <method>"
+   echo "                    Allow following methods"
+   echo
    echo " -d, --dry-run      Show what will be done"
 }
 
@@ -29,8 +36,15 @@ verbosity=1
 action=apply
 integrity=yes
 sideeffects=yes
+sign=no
+methods='sha512sum sha384sum sha256sum sha1sum md5sum'
+check_filename=manifest
+fqdn=`hostname -f`
+host=`hostname`
+args=""
 
 do_args() {
+   _method_buf=""
    while [[ "$#" -gt 0 ]]; do
       case "$1" in
          -h|--help)
@@ -52,16 +66,22 @@ do_args() {
          -d|--dry-run)
             sideeffects=no
             ;;
+         -g|--gen)
+            action=generate
+            ;;
+         -s|--sign)
+            sign=yes
+            ;;
          -*)
             die "Unknown argument: $1"
             ;;
          *)
-            break
+            args="$args $1"
             ;;
       esac
       shift
    done
-   echo $@
+   [ ! -z "$_method_buf" ] && methods=$_method_buf
 }
 
 do_args $@
@@ -72,6 +92,7 @@ do_args $@
 log 4 "verbosity: $verbosity"
 log 4 "dry-run: $sideeffects"
 log 4 "action: $action"
+log 4 "args: $args"
 
 # hostname, $fqdn or other specifics are kept in branches
 #git checkout $host 2>/dev/null
@@ -104,12 +125,18 @@ integrity_check () {
       log 1 "gpg not available, can't guarantee integrity" >&2
       exit 4
    fi
-   for key in $GPG_KEYS
-      do
-      gpg --recv-key $key
+   for key in $GPG_KEYS; do
+      if [ $verbosity -gt 3 ]; then
+          gpg --recv-key $key
+      elif [ $verbosity -lt 3 ]; then
+          gpg --recv-key --quiet $key
+      else
+          gpg --recv-key $key
+      fi
    done
 
-   for method in $check_methods
+   log 4 "verifying manifest w/"$methods
+   for method in $methods
    do
       file=$check_filename.$method
       if [ -f $file.gpg ]
@@ -121,7 +148,6 @@ integrity_check () {
             continue
          fi
 
-         # a
          [ -f $file ] && mv $file $file.old
          gpg --yes --output $file -d $file.gpg || exit 7
          diff $file.old $file
@@ -240,6 +266,33 @@ match_copy() {
    cd $workdir
 }
 
+generate_manifest() {
+    method=${HASH_METHOD:-sha256sum}
+
+    generate() {
+       if [ -d "$1" ]; then
+          rm -f $1/manifest.$method
+          log 2 "Generating $method manifest for $1"
+          find $1 -type f |
+             egrep -v '^\./(inst|\.|manifest\.|modules/[^/]+/files)' | sort |
+             xargs $method > $1/manifest.$method
+          [[ "yes" == "$sign" ]] && gpg --sign $1/manifest.$method
+       else
+          log 3 "Refusing to generate manifest for $1, not a directory"
+       fi
+    }
+
+    catalogs=$@
+
+    if [[ $# == 0 ]]; then
+       catalogs=`ls -d modules/*`" ."
+    fi
+
+    for catalog in $catalogs; do
+       generate $catalog
+    done
+}
+
 # off or on by default?
 [[ "no" == $integrity ]] && check_methods=
 
@@ -251,6 +304,9 @@ case $action in
       match_copy . $check_methods
       ;;
    integrity)
-      integrity_check $@
+      integrity_check $args
+      ;;
+   generate)
+      generate_manifest $args
       ;;
 esac

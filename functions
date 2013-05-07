@@ -5,7 +5,7 @@ verbosity=${verbosity:-0}
 doscript() {
    script=$1
    shift
-   echo " [INFO] Execing module/$script"
+   log 3 "Execing module/$script"
    if [ -d "modules/$script" ]; then
       modules/$script/module $@
    else
@@ -42,7 +42,7 @@ die() {
 log() {
    level=$1
    shift
-   if [ $verbosity  -ge $level ]; then
+   if [ $verbosity  -ge $level ] || [[ "yes" == $DEBUG ]]; then
       case "$level" in
          0) echo -n "[fatal] " ;;
          1) echo -n "  [err] " ;;
