@@ -32,7 +32,7 @@ usage () {
    echo " -d, --dry-run      Show what will be done"
 }
 
-verbosity=1
+verbosity=3
 action=apply
 integrity=yes
 sideeffects=yes
