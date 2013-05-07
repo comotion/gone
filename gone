@@ -274,27 +274,23 @@ match_copy() {
 generate_manifest() {
     method=${HASH_METHOD:-sha256sum}
 
-    generate() {
-       if [ -d "$1" ]; then
-          rm -f $1/manifest.$method
-          log 2 "Generating $method manifest for $1"
-          find $1 -type f |
-             egrep -v '^\./(inst|\.|manifest\.|modules/[^/]+/files)' | sort |
-             xargs $method > $1/manifest.$method
-          [[ "yes" == "$sign" ]] && gpg --sign $1/manifest.$method
-       else
-          log 4 "Refusing to generate manifest for $1, not a directory"
-       fi
-    }
-
     catalogs=$@
 
     if [[ $# == 0 ]]; then
-       catalogs=`ls -d modules/*`" ."
+       catalogs=$(find . -type d -name 'files' | xargs dirname)
     fi
 
     for catalog in $catalogs; do
-       generate $catalog
+       if [ -d "$catalog" ]; then
+          rm -f $catalog/manifest.$method
+          log 2 "Generating $method manifest for $catalog"
+          find $catalog -type f |
+             grep -Pv '^\./(inst|\.|manifest\.|(?:[^/]+/)+files)' | sort |
+             xargs $method > $catalog/manifest.$method
+          [[ "yes" == "$sign" ]] && gpg --sign $catalog/manifest.$method
+       else
+          log 4 "Refusing to generate manifest for $catalog, not a directory"
+       fi
     done
 }
 
