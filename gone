@@ -112,17 +112,6 @@ log 4 "action: $action"
 log 4 "args: $args"
 log 4 "sync-agents: $sync_agents"
 
-# hostname, $fqdn or other specifics are kept in branches
-#git checkout $host 2>/dev/null
-#git checkout $fqdn 2>/dev/null
-#
-#git branch
-# potential weakness: one machine may have many roles, not in this scheme though
-# edit: keep separate branch for each role...
-# or keep the same files and figure out a way to do multiple inheritance
-# .. bah, do special things in the modules
-#
-
 #### some important functions ... the real red meat  ####
 
 # do integrity check of all available methods.
