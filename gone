@@ -138,19 +138,17 @@ log 4 "sync-agents: $sync_agents"
 # there is a multiuser use case for signing some files with a different key.
 PASSED=
 integrity_check () {
-   if [[ "yes" == $integrity ]]; then
-      if [ -z "`which gpg`" ]; then
-         log 1 "gpg not available, can't guarantee integrity" >&2
-         exit 4
-      fi
-      for key in $GPG_KEYS; do
-         if [ $verbosity -lt 4 ]; then
-             gpg --recv-key --quiet $key
-         else
-             gpg --recv-key $key
-         fi
-      done
+   if [ -z "`which gpg`" ]; then
+      log 1 "gpg not available, can't guarantee integrity" >&2
+      exit 4
    fi
+   for key in $GPG_KEYS; do
+      if [ $verbosity -lt 4 ]; then
+          gpg --recv-key --quiet $key
+      else
+          gpg --recv-key $key
+      fi
+   done
 
    log 4 "verifying manifest w/"$methods
    for method in $methods
@@ -166,7 +164,7 @@ integrity_check () {
          fi
 
          [ -f $file ] && mv $file $file.old
-		 gpg --yes --output $file -d $file.gpg || exit 7
+            gpg --yes --output $file -d $file.gpg || exit 7
          diff $file.old $file
 
          # ah the shittiness of bash exit codes
