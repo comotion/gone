@@ -1,0 +1,29 @@
+#!/bin/sh
+
+GPG_KEYS="107B264D CE49888C"
+DEFAULT_SPEC=
+MODULES="base git policy ubuntu lowpower dote_firewall prads"
+
+fqdn=`hostname -f`
+host=`hostname`
+spec=
+
+# comment the methods out to disable integrity checking
+check_methods='sha512sum sha384sum sha256sum sha1sum md5sum'
+check_filename=manifest
+
+case $host in
+   kwy.u*)
+      spec=server
+      ;;
+   *)
+      spec=
+esac
+
+case $host in
+   bt*)
+      # not ossec
+      ;;
+   *)
+      MODULES="${MODULES} ossec"
+esac

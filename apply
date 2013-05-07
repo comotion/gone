@@ -1,7 +1,7 @@
 #!/bin/sh
 # yes the shell
 # 2010-08-31 Kacper Wysocki <comotion@krutt.org> Initial version
-# 
+#
 # bottom up is better than top down
 
 # the two keys I use for signing gone manifests
@@ -9,7 +9,27 @@
 # 107B264D # comotion@krutt.org
 # CE49888C # kwy@redpill-linpro.com
 
-GPG_KEYS="107B264D CE49888C"
+. ./target
+
+doscript() {
+   script=$1
+   shift
+   echo " [INFO] Execing module/$script"
+   if [ -d "modules/$script" ]; then
+      modules/$script/module $@
+   else
+      modules/$script $@
+   fi;
+}
+
+foreach() {
+   cmd=$1
+   shift;
+   for call in $@
+   do
+      $cmd $call $spec
+   done
+}
 
 usage () {
    echo "git clone repo/gone ; cd gone; ./apply"
@@ -18,14 +38,6 @@ usage () {
    echo "./apply check   - only check integrity"
    echo "./apply quiet   - only print important stuff"
 }
-
-# let defaults be default: fall back to logic
-fqdn=`hostname -f`
-host=`hostname`
-
-# comment the methods out to disable integrity checking
-check_methods='sha512sum sha384sum sha256sum sha1sum md5sum'
-check_filename=manifest
 
 # hostname, $fqdn or other specifics are kept in branches
 git checkout $host 2>/dev/null
@@ -47,7 +59,7 @@ git branch
 # someone might have snuck in a file that is missing in the manifest, so only use
 # the manifest when applying files.
 
-# 
+#
 # XXX:
 # Do we want to do this the hard way? This needs more than just a manifest:
 # there is a multiuser use case for signing some files with a different key.
@@ -82,12 +94,12 @@ integrity_check () {
             echo $method not available
             continue
          fi
-         
+
          # a
          [ -f $file ] && mv $file $file.old
          gpg --yes --output $file -d $file.gpg || exit 7
          diff $file.old $file
-            
+
          # ah the shittiness of bash exit codes
          if $method $quiet -c $file
          then
@@ -108,14 +120,16 @@ integrity_check () {
    fi
 }
 
-match_copy () {
+match_copy() {
 # substitute installed copies for version controlled ones
+   srcdir=$1
+   shift
    check_methods=`shift`
    workdir=$PWD
    if [ -z "$check_methods" ]
    then
       # no signature, no manifest
-      FILES="`find . -type f -wholename '*/files/*' | sort`"
+      FILES="`find "$srcdir/files" -type f | sort`"
    else
       # close a loophole by using files from the manifest only
       FILES=`cat manifest.$PASSED | cut -f 1 -d ' ' --complement | grep '^ \./files/' | sed 's/^ .\/files\///'`
@@ -129,8 +143,9 @@ match_copy () {
       if [ ! -f $target ]
          then
          if [ -d `dirname $target` ]
-            then
-            cp -av $file $target
+         then
+            echo " [INFO] install target ($file -> $target)"
+            cp -a $file $target
          else
             echo "not installing $file, no target dir"
          fi
@@ -141,24 +156,25 @@ match_copy () {
       # problem: bash sux for this :-(
       #stati=`stat -t $file` # terse pickle
       statd=`stat -c '%a %u %g %C' $file 2>/dev/null`
-      #stato=`stat -t /$file` # terse target
-      stats=`stat -c '%a %u %g %C' /$file 2>/dev/null`
+      #stato=`stat -t $target` # terse target
+      stats=`stat -c '%a %u %g %C' $target 2>/dev/null`
       #stata=( $stats ) # an array. arrays suck in dash
-      attrs=`lsattr "/$file" | awk '{print $1}'`
+      attrs=`lsattr "$target" | awk '{print $1}'`
       # compare the pickle with the target
-      echo "$target $stats $attrs"
-      echo " $file.$statd"
       if [ "$stats" != "$statd" ]
          then
          # noncritical failure
-         echo 'pickle and target do not match, check lsattr and ownership'
+         echo ' [WARN] pickle and target do not match, check lsattr and ownership'
          #echo ${stata[0]} ${stata[1]} ${stata[2]} # not portable to dash
       fi
       # diff is what's important
       if ! diff -bud $target $file || [ $? = 2 ]
       then
          if [ -z "$USER_CHOSE" ]
-            then
+         then
+            echo "$target $stats $attrs"
+            echo " $file.$statd"
+            echo "[] $target"
             echo "$file doesn't match local copy, (a)pply, (commit) or [SKIP]?"
             read choose
          else
@@ -166,11 +182,13 @@ match_copy () {
          fi
          case $choose in
             [aA])
-            cp -av $file $target
+            echo " [INFO] overriding target ($file -> $target)"
+            cp -a $file $target
             ;;
 
             commit)
-            cp -av $target $file
+            echo " [INFO] commiting target ($target -> $file)"
+            cp -a $target $file
             git diff $file
             git add $file
             git commit
@@ -183,6 +201,7 @@ match_copy () {
    done
    cd $workdir
 }
+
 if [ "$1" = "help" ]
 then
    usage
@@ -196,15 +215,20 @@ then
 else
    check_methods=
 fi
+
 if [ "$1" = "check" ]
 then
    # just check
    exit
 fi
-# place files where they should be
-match_copy $check_methods
+
+# execute module script and place files where they should be
+dosync()  {
+   doscript $1
+   match_copy modules/$1 $check_methods
+}
 
 # kick the script - basically what chef, slaughter and puppet does
-. $workdir/defaults
-# dash doesn't like it when we source relative scripts :-(
-
+# execute all the modules and then sync any file non-module files
+foreach dosync $MODULES
+match_copy . $check_methods
