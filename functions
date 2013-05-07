@@ -1,0 +1,57 @@
+#!/bin/sh
+
+verbosity=${verbosity:-0}
+
+doscript() {
+   script=$1
+   shift
+   echo " [INFO] Execing module/$script"
+   if [ -d "modules/$script" ]; then
+      modules/$script/module $@
+   else
+      modules/$script $@
+   fi;
+}
+
+foreach() {
+   cmd=$1
+   shift;
+   for call in $@
+   do
+      $cmd $call $spec
+   done
+}
+
+# execute module script and place files where they should be
+dosync()  {
+   doscript $1
+   match_copy modules/$1 $check_methods
+}
+
+die() {
+    echo "$@" >&2
+    exit 1
+}
+
+# Levels:
+# 0: fatal
+# 1: error
+# 2: warn
+# 3: info
+# 4: debug
+log() {
+   level=$1
+   shift
+   if [ $verbosity  -ge $level ]; then
+      case "$level" in
+         0) echo -n "[fatal] " ;;
+         1) echo -n "  [err] " ;;
+         2) echo -n " [info] " ;;
+         3) echo -n "  [msg] " ;;
+         4) echo -n "  [dbg] " ;;
+      esac
+
+      echo $@
+   fi
+}
+

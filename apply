@@ -4,46 +4,80 @@
 #
 # bottom up is better than top down
 
-# the two keys I use for signing gone manifests
-#  add your own key here
-# 107B264D # comotion@krutt.org
-# CE49888C # kwy@redpill-linpro.com
+usage () {
+   echo "Apply a gone configuration to the host"
+   echo
+   echo "usage: $0 [<options>] [<dir>, ...]"
+   echo
+   echo "Options:"
+   echo "========"
+   echo
+   echo " -h, --help         Show this help text"
+   echo
+   echo " -q, --quite        Don't display any output"
+   echo
+   echo " -v, --verbose      Increase verbosity level"
+   echo
+   echo " -i, --ignore-gpg   Don't perform GPG integrity check"
+   echo
+   echo " -c, --check-gpg    Check manifest GPG signatures (implies --dry-run)"
+   echo
+   echo " -d, --dry-run      Show what will be done"
+}
 
+verbosity=1
+action=apply
+integrity=yes
+sideeffects=yes
+
+do_args() {
+   while [[ "$#" -gt 0 ]]; do
+      case "$1" in
+         -h|--help)
+            usage
+            exit 1
+            ;;
+         -q|--quite)
+            verbosity=0
+            ;;
+         -v|--verbose)
+            verbosity=$(( $verbosity + 1 ))
+            ;;
+         -i|--ignore-integrity)
+            integrity=yes
+            ;;
+         -c|--check-gpg)
+            action=integrity
+            ;;
+         -d|--dry-run)
+            sideeffects=no
+            ;;
+         -*)
+            die "Unknown argument: $1"
+            ;;
+         *)
+            break
+            ;;
+      esac
+      shift
+   done
+   echo $@
+}
+
+do_args $@
+
+. ./functions
 . ./target
 
-doscript() {
-   script=$1
-   shift
-   echo " [INFO] Execing module/$script"
-   if [ -d "modules/$script" ]; then
-      modules/$script/module $@
-   else
-      modules/$script $@
-   fi;
-}
-
-foreach() {
-   cmd=$1
-   shift;
-   for call in $@
-   do
-      $cmd $call $spec
-   done
-}
-
-usage () {
-   echo "git clone repo/gone ; cd gone; ./apply"
-   echo
-   echo "./apply nocheck - do not check file integrity"
-   echo "./apply check   - only check integrity"
-   echo "./apply quiet   - only print important stuff"
-}
+log 4 "verbosity: $verbosity"
+log 4 "dry-run: $sideeffects"
+log 4 "action: $action"
 
 # hostname, $fqdn or other specifics are kept in branches
-git checkout $host 2>/dev/null
-git checkout $fqdn 2>/dev/null
-
-git branch
+#git checkout $host 2>/dev/null
+#git checkout $fqdn 2>/dev/null
+#
+#git branch
 # potential weakness: one machine may have many roles, not in this scheme though
 # edit: keep separate branch for each role...
 # or keep the same files and figure out a way to do multiple inheritance
@@ -65,17 +99,9 @@ git branch
 # there is a multiuser use case for signing some files with a different key.
 PASSED=
 integrity_check () {
-   for arg in $@
-   do
-      if [ "$arg" = "quiet" ]
-         then
-         quiet='--quiet'
-      fi
-   done
-
    if [ -z "`which gpg`" ]
    then
-      echo "gpg not available, can't guarantee integrity"
+      log 1 "gpg not available, can't guarantee integrity" >&2
       exit 4
    fi
    for key in $GPG_KEYS
@@ -91,7 +117,7 @@ integrity_check () {
          # no sense checking if we're missing programs
          if [ -z "`which $method`" ]
          then
-            echo $method not available
+            log 1 "integrity check failed, method '$method' not available" >&2
             continue
          fi
 
@@ -108,14 +134,14 @@ integrity_check () {
             PASSED="$method"
             break
          else
-            echo "Integrity check $method failed!"
+            log 1 "integrity check failed, method '$method' not available" >&2
             exit 2
          fi
       fi
    done
    if [ -z "$PASSED" ]
    then
-      echo "Integrity not available."
+      log 1 "integrity check failed, integrity not available" >&2
       exit 3
    fi
 }
@@ -126,8 +152,7 @@ match_copy() {
    shift
    check_methods=`shift`
    workdir=$PWD
-   if [ -z "$check_methods" ]
-   then
+   if [ -z "$check_methods" ]; then
       # no signature, no manifest
       FILES="`find "$srcdir/files" -type f | sort`"
    else
@@ -135,19 +160,23 @@ match_copy() {
       FILES=`cat manifest.$PASSED | cut -f 1 -d ' ' --complement | grep '^ \./files/' | sed 's/^ .\/files\///'`
       [ $! ] && exit 2 # quit on error
    fi
+
    #♯ why the hello not rsync?: b/c diff!
    # files should be relative paths
-   for file in $FILES
-   do
+   for file in $FILES; do
       target=`echo $file | sed 's/.*\/files\//\//'`
       if [ ! -f $target ]
          then
          if [ -d `dirname $target` ]
          then
-            echo " [INFO] install target ($file -> $target)"
-            cp -a $file $target
+            if [[ "yes" == $sideeffects ]]; then
+               log 3 "install target ($file -> $target)"
+               cp -a $file $target
+             else
+               log 3 "install target ($file -> $target) [dry-run]"
+             fi;
          else
-            echo "not installing $file, no target dir"
+            log 1 "not installing $file, no target dir"
          fi
          continue
       fi
@@ -155,44 +184,53 @@ match_copy() {
       # any and all uniquely definable characteristics of the file
       # problem: bash sux for this :-(
       #stati=`stat -t $file` # terse pickle
-      statd=`stat -c '%a %u %g %C' $file 2>/dev/null`
       #stato=`stat -t $target` # terse target
-      stats=`stat -c '%a %u %g %C' $target 2>/dev/null`
       #stata=( $stats ) # an array. arrays suck in dash
+      statd=`stat -c '%a %u %g %C' $file 2>/dev/null`
+      stats=`stat -c '%a %u %g %C' $target 2>/dev/null`
       attrs=`lsattr "$target" | awk '{print $1}'`
+
       # compare the pickle with the target
-      if [ "$stats" != "$statd" ]
-         then
+      if [ "$stats" != "$statd" ]; then
          # noncritical failure
-         echo ' [WARN] pickle and target do not match, check lsattr and ownership'
-         #echo ${stata[0]} ${stata[1]} ${stata[2]} # not portable to dash
+         log 2 'pickle and target do not match, check lsattr and ownership'
       fi
+
       # diff is what's important
       if ! diff -bud $target $file || [ $? = 2 ]
       then
          if [ -z "$USER_CHOSE" ]
          then
-            echo "$target $stats $attrs"
-            echo " $file.$statd"
-            echo "[] $target"
-            echo "$file doesn't match local copy, (a)pply, (commit) or [SKIP]?"
-            read choose
+            if [ "yes" == $sideeffects ]; then
+                echo "$target $stats $attrs"
+                echo " $file.$statd"
+                echo "[] $target"
+                echo "$file doesn't match local copy, (a)pply, (commit) or [SKIP]?"
+                read choose
+            else
+               log 2 "$file doesn't match local copy [dry-run]"
+               choose=ignore
+            fi
          else
             choose=$USER_CHOSE
          fi
+
          case $choose in
             [aA])
-            echo " [INFO] overriding target ($file -> $target)"
-            cp -a $file $target
-            ;;
+               log 3 "overriding target ($file -> $target)"
+               cp -a $file $target
+               ;;
 
             commit)
-            echo " [INFO] commiting target ($target -> $file)"
-            cp -a $target $file
-            git diff $file
-            git add $file
-            git commit
-            ;;
+               log 3 "commiting target ($target -> $file)"
+               cp -a $target $file
+               git diff $file
+               git add $file
+               git commit
+               ;;
+
+            ignore)
+               ;;
 
             *)
                # skip
@@ -202,33 +240,17 @@ match_copy() {
    cd $workdir
 }
 
-if [ "$1" = "help" ]
-then
-   usage
-fi
-
 # off or on by default?
-# if [ "$1" = "check" ]
-if [ "$1" != "nocheck" ] # on by default
-then
-   integrity_check $@
-else
-   check_methods=
-fi
+[[ "no" == $integrity ]] && check_methods=
 
-if [ "$1" = "check" ]
-then
-   # just check
-   exit
-fi
-
-# execute module script and place files where they should be
-dosync()  {
-   doscript $1
-   match_copy modules/$1 $check_methods
-}
-
-# kick the script - basically what chef, slaughter and puppet does
-# execute all the modules and then sync any file non-module files
-foreach dosync $MODULES
-match_copy . $check_methods
+case $action in
+   apply)
+      # kick the script - basically what chef, slaughter and puppet does
+      # execute all the modules and then sync any file non-module files
+      foreach dosync $MODULES
+      match_copy . $check_methods
+      ;;
+   integrity)
+      integrity_check $@
+      ;;
+esac
