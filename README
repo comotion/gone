@@ -33,8 +33,7 @@ QUICK START
 ===========
 
 git clone git://github.com:comotion/gone.git
-find files       # check what files get overwritten
-cat defaults     # check what scripts get run
+cd gone
 ./apply          # apply the configuration on this host.
 
 Now you can use your cloned repo as a master for other repos via git + ssh.
