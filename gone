@@ -30,6 +30,9 @@ usage () {
    echo "                    Allow following methods"
    echo
    echo " -d, --dry-run      Show what will be done"
+   echo
+   echo " -t <file>, --target <file>"
+   echo "                    The configuration target to use"
 }
 
 verbosity=3
@@ -72,6 +75,10 @@ do_args() {
          -s|--sign-gpg)
             sign=yes
             ;;
+         -t|--target)
+            shift
+            target=$1
+            ;;
          -*)
             echo "Unknown argument: $1" >&2
             exit 1
@@ -88,7 +95,14 @@ do_args() {
 do_args $@
 
 . ./functions
-. ./target
+
+if [ ! -e $target ]; then
+   echo "No such configuration target: '$target'" >&2
+   exit 1
+fi
+
+. ./$target
+
 
 log 4 "verbosity: $verbosity"
 log 4 "dry-run: $sideeffects"

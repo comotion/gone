@@ -1,0 +1,19 @@
+#!/bin/sh
+
+GPG_KEYS="107B264D CE49888C 845B49F2"
+DEFAULT_SPEC=
+MODULES=""
+CATALOGS="modules hosts roles"
+SYNC_AGENTS="sync_default sync_modules sync_host"
+
+sync_host() {
+	target=$([ -d host ] && find host -name $fqdn -or -name $host | head -1)
+	if [ ! -z "$target" ]; then
+		dosync $target
+	else
+		log 2 "host $fqdn have no config"
+	fi
+}
+
+# Specify the wanted checksum methods defaults: sha512sum sha384sum sha256sum sha1sum md5sum
+#methods='sha512sum'
