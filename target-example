@@ -13,14 +13,24 @@ GPG_KEYS="107B264D CE49888C 845B49F2"
 MODULES=""
 SYNC_AGENTS="sync_default sync_modules sync_host"
 
+#
+# Syncs a files/modules specific for a host. It tries to lookup the
+# fqdn (with fallback to hostname) in host/<target>. If found it will
+# sync the files and if any modules are found in host/<target>/modules
+# these modules will be installed.
 sync_host() {
-	target=$([ -d host ] && find host -name $fqdn -or -name $host | head -1)
-	if [ ! -z "$target" ]; then
-		dosync $target
-	else
-		log 2 "host $fqdn have no config"
-	fi
-}
+   hosttarget=$([ -d host ] && find host -name $fqdn -or -name $host | head -1)
+   if [ ! -z "$hosttarget" ]; then
+      dosync $hosttarget
 
-# Specify the wanted checksum methods defaults: sha512sum sha384sum sha256sum sha1sum md5sum
-#methods='sha512sum'
+      if [ -f $hosttarget/modules ]; then
+         _OLD_MODULES=$MODULES
+         MODULES=$(cat $hosttarget/modules)
+         log 3 "syncing modules for host $fqdn: $MODULES"
+         sync_modules
+         MODULES=$_OLD_MODULES
+      fi
+   else
+      log 2 "host $fqdn have no config"
+   fi
+}
