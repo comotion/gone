@@ -20,7 +20,11 @@ doscript() {
    script=$1
    shift
    echo "execing $script"
-   modules/$script $@
+   if [ -d "modules/$script" ]; then
+      modules/$script/module $@
+   else
+      modules/$script $@
+   fi;
 }
 
 do_plural() {
