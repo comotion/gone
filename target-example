@@ -1,9 +1,16 @@
 #!/bin/sh
 
+# Example configuration on how to apply default, module specific and
+# host specific configuration
+#
+# Variable overrides:
+# $GPG_KEYS    : list of trusted GPG keys
+# $MODULES     : List of default modules to apply
+# $SYNC_AGENTS : List of functions to call (sequentially) to generate a full config
+# $methods     : List of checksum methods that can be called
+
 GPG_KEYS="107B264D CE49888C 845B49F2"
-DEFAULT_SPEC=
 MODULES=""
-CATALOGS="modules hosts roles"
 SYNC_AGENTS="sync_default sync_modules sync_host"
 
 sync_host() {

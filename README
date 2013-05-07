@@ -38,6 +38,10 @@ cd gone
 
 Now you can use your cloned repo as a master for other repos via git + ssh.
 
+EXAMPLE
+=======
+Check `target-example` for more information
+
 TODO / TO THINK ABOUT
 =====================
 
