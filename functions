@@ -5,11 +5,11 @@ verbosity=${verbosity:-0}
 doscript() {
    script=$1
    shift
-   log 3 "Execing module/$script"
-   if [ -d "modules/$script" ]; then
-      modules/$script/module $@
-   else
-      modules/$script $@
+   log 3 "Execing $script"
+   if [ -d $script ]; then
+      [ -e $script/init ] && $script/init $@
+   elif [ -e $script ]; then
+      $script $@
    fi;
 }
 
@@ -25,7 +25,17 @@ foreach() {
 # execute module script and place files where they should be
 dosync()  {
    doscript $1
-   match_copy modules/$1 $check_methods
+   match_copy $1 $check_methods
+}
+
+sync_modules() {
+   for module in $MODULES; do
+      dosync modules/$module
+   done
+}
+
+sync_default() {
+   match_copy . $check_methods
 }
 
 # Levels:

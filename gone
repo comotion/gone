@@ -44,6 +44,7 @@ methods='sha512sum sha384sum sha256sum sha1sum md5sum'
 check_filename=manifest
 fqdn=`hostname -f`
 host=`hostname`
+sync_agents="sync_modules sync_default"
 args=""
 
 do_args() {
@@ -103,11 +104,13 @@ fi
 
 . ./$target
 
+[ ! -z "$SYNC_AGENTS" ] && sync_agents=$SYNC_AGENTS
 
 log 4 "verbosity: $verbosity"
 log 4 "dry-run: $sideeffects"
 log 4 "action: $action"
 log 4 "args: $args"
+log 4 "sync-agents: $sync_agents"
 
 # hostname, $fqdn or other specifics are kept in branches
 #git checkout $host 2>/dev/null
@@ -309,18 +312,20 @@ generate_manifest() {
 
 # off or on by default?
 if [[ "no" == $integrity ]]; then
-	check_methods=
+   check_methods=
 else
-	check_methods=$methods
+   check_methods=$methods
 fi
 
 case $action in
    apply)
       # kick the script - basically what chef, slaughter and puppet does
       # execute all the modules and then sync any file non-module files
-      integrity_check $args
-      foreach dosync $MODULES
-      match_copy . $check_methods
+      [[ "yes"  == $integrity ]] && integrity_check $args
+
+      for agent in $sync_agents; do
+         $agent
+      done
       ;;
    integrity)
       integrity_check $args
