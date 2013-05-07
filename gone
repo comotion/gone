@@ -46,6 +46,7 @@ fqdn=`hostname -f`
 host=`hostname`
 sync_agents="sync_modules sync_default"
 args=""
+target=target
 
 do_args() {
    _method_buf=""
@@ -97,7 +98,7 @@ do_args $@
 
 . ./functions
 
-if [ ! -e $target ]; then
+if [ ! -f $target ]; then
    echo "No such configuration target: '$target'" >&2
    exit 1
 fi
