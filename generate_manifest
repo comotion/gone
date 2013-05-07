@@ -2,8 +2,26 @@
 #
 # Generate manifest file for integrity checking
 
-method=${1:-sha256sum}
-rm -f manifest.$method
-find . -type f | 
-   egrep -v '^\./(inst|\.|manifest\.)' | sort |
-   xargs $method > manifest.$method
+method=${HASH_METHOD:-sha256sum}
+
+generate() {
+	if [ -d "$1" ]; then
+		rm -f $1/manifest.$method
+		echo " [INFO] Generating $method manifest for $1"
+		find $1 -type f |
+		   egrep -v '^\./(inst|\.|manifest\.|modules/[^/]+/files)' | sort |
+		   xargs $method > $1/manifest.$method
+	else
+		echo " [WARN] Refusing to generate manifest for $1, not a directory"
+	fi
+}
+
+catalogs=$@
+
+if [[ $# == 0 ]]; then
+	catalogs=`ls -d modules/*`" ."
+fi
+
+for catalog in $catalogs; do
+	generate $catalog
+done
