@@ -18,7 +18,7 @@ foreach() {
    shift;
    for call in $@
    do
-      $cmd $call $spec
+      $cmd $call
    done
 }
 

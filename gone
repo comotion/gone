@@ -295,7 +295,11 @@ generate_manifest() {
 }
 
 # off or on by default?
-[[ "no" == $integrity ]] && check_methods=
+if [[ "no" == $integrity ]]; then
+	check_methods=
+else
+	check_methods=$methods
+fi
 
 case $action in
    apply)
