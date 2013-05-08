@@ -50,7 +50,7 @@ target=target
 
 do_args() {
    _method_buf=""
-   while [[ "$#" -gt 0 ]]; do
+   while [ "$#" -gt 0 ]; do
       case "$1" in
          -h|--help)
             usage
@@ -200,7 +200,7 @@ match_copy() {
          then
          if [ -d `dirname $target` ]
          then
-            if [[ "yes" == $sideeffects ]]; then
+            if [ "yes" = $sideeffects ]; then
                log 3 "install target ($file -> $target)"
                cp -a $file $target
              else
@@ -276,7 +276,7 @@ generate_manifest() {
 
     catalogs=$@
 
-    if [[ $# == 0 ]]; then
+    if [ $# -eq 0 ]; then
        catalogs=$(find . -type d -name 'files' | xargs dirname)
     fi
 
@@ -287,7 +287,7 @@ generate_manifest() {
           find $catalog -type f |
              grep -Pv '^\./(inst|\.|manifest\.|(?:[^/]+/)+files)' | sort |
              xargs $method > $catalog/manifest.$method
-          [[ "yes" == "$sign" ]] && gpg --sign $catalog/manifest.$method
+          [ "yes" = "$sign" ] && gpg --sign $catalog/manifest.$method
        else
           log 4 "Refusing to generate manifest for $catalog, not a directory"
        fi
@@ -295,7 +295,7 @@ generate_manifest() {
 }
 
 # off or on by default?
-if [[ "no" == $integrity ]]; then
+if [ "no" = $integrity ]; then
    check_methods=
 else
    check_methods=$methods
@@ -305,7 +305,7 @@ case $action in
    apply)
       # kick the script - basically what chef, slaughter and puppet does
       # execute all the modules and then sync any file non-module files
-      [[ "yes"  == $integrity ]] && integrity_check $args
+      [ "yes" = $integrity ] && integrity_check $args
 
       for agent in $sync_agents; do
          $agent
