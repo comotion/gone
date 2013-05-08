@@ -298,8 +298,11 @@ generate_manifest() {
           cd $catalog
           find . -type f |
              grep -Pv '^\./(inst|\.|manifest\.|(?:[^/]+/)+files)' | sort |
-             xargs $method > manifest.$method
-          [ "yes" = "$sign" ] && gpg --sign manifest.$method
+             xargs $method > $check_filename.$method
+          if [ "yes" = "$sign" ]; then
+             log 2 "Signing $catalog/$check_filename.$method.gpg"
+             gpg --sign $check_filename.$method
+          fi
           cd $OLDPWD
        else
           log 4 "Refusing to generate manifest for $catalog, not a directory"

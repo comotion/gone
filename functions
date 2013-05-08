@@ -25,7 +25,7 @@ foreach() {
 # execute module script and place files where they should be
 dosync()  {
    doscript $1
-   match_copy $1 $check_methods
+   match_copy $1 "$methods"
 }
 
 sync_modules() {
@@ -35,7 +35,7 @@ sync_modules() {
 }
 
 sync_default() {
-   match_copy . $check_methods
+   match_copy . $methods
 }
 
 # Levels:
