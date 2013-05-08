@@ -288,7 +288,7 @@ generate_manifest() {
 	method=$(hd $methods)
 
     if [ $# -eq 0 ]; then
-       catalogs=$(find . -type d -name 'files' | xargs dirname)
+       catalogs=$(find . -type d -name 'files' -exec dirname '{}' \; | sort -r)
     fi
 
     for catalog in $catalogs; do
