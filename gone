@@ -140,7 +140,21 @@ integrity_check () {
       fi
    done
 
+   manifests=$(find . -name 'manifest.*' |
+      sed -E 's/\.[^.]*(\.gpg)?$//' | sort | uniq | xargs dirname)
+
+   foreach file_integrity $manifests
+
    log 4 "verifying manifest w/"$methods
+   if [ -z "$PASSED" ]
+   then
+      log 1 "integrity check failed, integrity not available" >&2
+      exit 3
+   fi
+}
+
+file_integrity() {
+   cd $1
    for method in $methods
    do
       file=$check_filename.$method
@@ -154,7 +168,7 @@ integrity_check () {
          fi
 
          [ -f $file ] && mv $file $file.old
-            gpg --yes --output $file -d $file.gpg || exit 7
+         gpg --yes --output $file -d $file.gpg || exit 7
          diff $file.old $file
 
          # ah the shittiness of bash exit codes
@@ -165,16 +179,12 @@ integrity_check () {
             PASSED="$method"
             break
          else
-            log 1 "$method: file $file  " >&2
+            log 1 "$method: file $1/$file  " >&2
             exit 2
          fi
       fi
    done
-   if [ -z "$PASSED" ]
-   then
-      log 1 "integrity check failed, integrity not available" >&2
-      exit 3
-   fi
+   cd $OLDPWD
 }
 
 match_copy() {
@@ -284,10 +294,12 @@ generate_manifest() {
        if [ -d "$catalog" ]; then
           rm -f $catalog/manifest.$method
           log 2 "Generating $method manifest for $catalog"
-          find $catalog -type f |
+          cd $catalog
+          find . -type f |
              grep -Pv '^\./(inst|\.|manifest\.|(?:[^/]+/)+files)' | sort |
-             xargs $method > $catalog/manifest.$method
-          [ "yes" = "$sign" ] && gpg --sign $catalog/manifest.$method
+             xargs $method > manifest.$method
+          [ "yes" = "$sign" ] && gpg --sign manifest.$method
+          cd $OLDPWD
        else
           log 4 "Refusing to generate manifest for $catalog, not a directory"
        fi
