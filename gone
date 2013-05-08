@@ -185,7 +185,7 @@ match_copy() {
    workdir=$PWD
    if [ -z "$check_methods" ]; then
       # no signature, no manifest
-      FILES="`find "$srcdir/files" -type f | sort`"
+      FILES="`[ -d \"$srcdir/files\" ] && find "$srcdir/files" -type f | sort`"
    else
       # close a loophole by using files from the manifest only
       FILES=`cat manifest.$PASSED | cut -f 1 -d ' ' --complement | grep '^ \./files/' | sed 's/^ .\/files\///'`
