@@ -47,7 +47,7 @@ sync_default() {
 log() {
    level=$1
    shift
-   if [ $verbosity  -ge $level ] || [[ "yes" == $DEBUG ]]; then
+   if [ $verbosity  -ge $level ] || [ "yes" = "$DEBUG" ]; then
       case "$level" in
          0) echo -n "[fatal] " ;;
          1) echo -n "  [err] " ;;
