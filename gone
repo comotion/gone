@@ -140,8 +140,9 @@ integrity_check () {
       fi
    done
 
-   manifests=$(find . -name 'manifest.*' |
-      sed -E 's/\.[^.]*(\.gpg)?$//' | sort | uniq | xargs dirname)
+   # Debian's coreutils are pre-historic, we can't use xargs `dirname`
+   # cuss dirname old version of `dirname` only takes single arg
+   manifests=$(find . -name 'manifest.*' -exec dirname '{}' \; | sort -u)
 
    foreach file_integrity $manifests
 
