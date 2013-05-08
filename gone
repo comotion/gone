@@ -283,9 +283,9 @@ match_copy() {
 }
 
 generate_manifest() {
-    method=${HASH_METHOD:-sha256sum}
-
     catalogs=$@
+
+	method=$(hd $methods)
 
     if [ $# -eq 0 ]; then
        catalogs=$(find . -type d -name 'files' | xargs dirname)
