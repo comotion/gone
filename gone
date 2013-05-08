@@ -243,7 +243,7 @@ match_copy() {
       then
          if [ -z "$USER_CHOSE" ]
          then
-            if [ "yes" == $sideeffects ]; then
+            if [ "yes" = $sideeffects ]; then
                 echo "$target $stats $attrs"
                 echo " $file.$statd"
                 echo "[] $target"
