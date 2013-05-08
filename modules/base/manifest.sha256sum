@@ -1,3 +1,3 @@
-c1e72daffe037e8bfa05aaa08d8da21507772e422b4ce46aea259b9d408ec5a4  ./modules/base/manifest.
 e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855  ./modules/base/manifest.gpg
-cd57b752340c53eed5f0ab2a91509bc360376728f0b79b629f1d6df8b1675e3d  ./modules/base/manifest.sha256sum.gpg
+0acc4ca04d5b0e13367a19eddd6999327d1bda4a1d41fb802e9d990badc4a82a  ./modules/base/manifest.sha256sum
+dbaba49ecda55cb86a549948b3efb0cccd8ada9826d852dfe317dac9e96bd623  ./modules/base/manifest.sha256sum.gpg
