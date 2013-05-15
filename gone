@@ -196,7 +196,7 @@ match_copy() {
    workdir=$PWD
    if [ -z "$check_methods" ]; then
       # no signature, no manifest
-      FILES="`[ -d \"$srcdir/files\" ] && find "$srcdir/files" -type f | sort`"
+      FILES="`[ -d \"$srcdir/files\" ] && find -L "$srcdir/files" -type f | sort`"
    else
       # close a loophole by using files from the manifest only
       FILES=`cat manifest.$PASSED | cut -f 1 -d ' ' --complement | grep '^ \./files/' | sed 's/^ .\/files\///'`
@@ -296,7 +296,7 @@ generate_manifest() {
           rm -f $catalog/manifest.$method
           log 2 "Generating $method manifest for $catalog"
           cd $catalog
-          find . -type f |
+          find -L . -type f |
              grep -Pv '^\./(inst|\.|manifest\.|(?:[^/]+/)+files)' | sort |
              xargs $method > $check_filename.$method
           if [ "yes" = "$sign" ]; then
