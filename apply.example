@@ -1,0 +1,29 @@
+#!/bin/sh
+
+# Example configuration on how to apply default, module specific and
+# host specific configuration
+
+# Ensure these keys are available
+export GPG_KEYS="107B264D CE49888C 845B49F2"
+export modules="base ossec ssh"
+# Applies ./files, all the modules defined above and host specifics
+export catalogs="files modules fqdn"
+
+[ -z "$@" ] && args=apply || args=$@
+
+./gone $args
+
+# Some other alternative approaches:
+#
+# Gone does not define how you structure your data, so for instance
+# if you would like to group hosts by their domain name you could
+# do this:
+#export host=$(hostname)/$(dnsdomain)
+#export catalogs="host"
+#
+# Adding a general 'role based' model is also straight forward,
+# there are two approaches, put everything in your ./apply file
+# and do a case "$host" in ..... Or you can put it in your hosts
+# export deps=roles/ from your host ./apply file
+
+

@@ -1,4 +1,5 @@
 #!/bin/sh
+# ex: ft=sh expandtab tabstop=3
 # yes the shell
 # 2010-08-31 Kacper Wysocki <comotion@krutt.org> Initial version
 #
@@ -7,46 +8,79 @@
 usage () {
    echo "Apply a gone configuration to the host"
    echo
-   echo "usage: $0 [<options>] [<dir>, ...]"
+   echo "usage: $0 [opts= <command> [<pkgs>,..]"
    echo
-   echo "Options:"
-   echo "========"
+   echo "Commands:"
+   echo "========="
+   echo " sign     Generate manifests and sign"
+   echo " apply    Apply a configuration"
+   echo " check    Validate manifests and signatures"
+   echo " git-tpl  Generate git pre-commit template"
+   echo " list     List packages requirements for this system"
+   echo " help     Shows this help text"
    echo
-   echo " -h, --help         Show this help text"
+   echo "General Options:"
+   echo "================"
    echo
-   echo " -q, --quite        Don't display any output"
+   echo " -h, --help"
+   echo "     Show this help text"
    echo
-   echo " -v, --verbose      Increase verbosity level"
+   echo " -q, --quite"
+   echo "     Display minimal output"
    echo
-   echo " -n, --no-check     Don't perform integrity checks"
+   echo " -v, --verbose"
+   echo "     Increase verbosity level (takes multiple)"
    echo
-   echo " -c, --check        Only check manifest, don't apply anything"
+   echo " -d, --dry-run"
+   echo "     Just pretend, won't change anything"
    echo
-   echo " -g, --gen          Generate manifests for configuration"
+   echo " -H <method>, --hashes <method>"
+   echo "     Set allowed hash methods"
+	echo
+	echo
+   echo "Sign options:"
+   echo "============="
+   echo " If required, additional options can be passed to GPG by using"
+   echo " the GPG_OPTS environemental variable"
    echo
-   echo " -s, --sign-gpg     Sign manifests"
+   echo " -n, --no-gpg"
+   echo "     Don't sign the package"
    echo
-   echo " -m <method>, --method <method>"
-   echo "                    Allow following methods"
    echo
-   echo " -d, --dry-run      Show what will be done"
+   echo "Apply options:"
+   echo "============="
    echo
-   echo " -t <file>, --target <file>"
-   echo "                    The configuration target to use"
+   echo " -i, --ignore-check"
+   echo "     Don't perform manifest integrity checks"
+   echo
+   echo
+   echo "Check options:"
+   echo "============="
+   echo
+   echo " -n, --no-gpg"
+   echo "     Don't check package signature"
+   echo
+   echo
+   echo "Error codes:"
+   echo "============"
+   echo "  1   Unknown command"
+   echo "  2   Manifest integrity failure"
+   echo "  3   Error, integrity check not performed."
+   echo "  4   Missing GPG"
+   echo "  7   GPG integrity check failed"
 }
 
-verbosity=3
-action=apply
+verbosity=2
+cmd=
 integrity=yes
 sideeffects=yes
-sign=no
+sign=yes
 methods='sha512sum sha384sum sha256sum sha1sum md5sum'
 check_filename=manifest
-fqdn=`hostname -f`
-host=`hostname`
-sync_agents="sync_modules sync_default"
+fqdn=${fqdn:-`hostname -f`}
+host=${host:-`hostname`}
+catalogs=${catalogs:-"files modules"}
 args=""
-target=target
 
 do_args() {
    _method_buf=""
@@ -54,39 +88,37 @@ do_args() {
       case "$1" in
          -h|--help)
             usage
-            exit 1
+            exit 0
             ;;
-         -q|--quite)
+         -q|--quiet)
             verbosity=0
             ;;
          -v|--verbose)
             verbosity=$(( $verbosity + 1 ))
             ;;
-         -n|--no-check)
-            integrity=no
-            ;;
-         -c|--check)
-            action=integrity
-            ;;
          -d|--dry-run)
             sideeffects=no
             ;;
-         -g|--gen)
-            action=generate
+         -H|--hashes)
+            shift;
+            methods=""
+            while true; do case "$1" in
+               -*) break 2;;
+               *) shift; methods="$methods $1" ;;
+            esac done
             ;;
-         -s|--sign-gpg)
-            sign=yes
+         -n|--no-gpg)
+            sign=no
             ;;
-         -t|--target)
-            shift
-            target=$1
+         -i|--ignore-check)
+            integrity=no
             ;;
          -*)
             echo "Unknown argument: $1" >&2
             exit 1
             ;;
          *)
-            args="$args $1"
+            [ -z "$cmd" ] && cmd=$1 || args="$args $1"
             ;;
       esac
       shift
@@ -96,22 +128,42 @@ do_args() {
 
 do_args $@
 
-. ./functions
+foreach() {
+   cmd=$1
+   shift;
+   for call in $@
+   do
+      $cmd $call
+   done
+}
 
-if [ ! -f $target ]; then
-   echo "No such configuration target: '$target'" >&2
+log() {
+   level=$1
+   shift
+   if [ $verbosity  -ge $level ] || [ "yes" = "$DEBUG" ]; then
+      case "$level" in
+        -1) echo -n "        " ;;
+         0) echo -n "[fatal] " ;;
+         1) echo -n "  [err] " ;;
+         2) echo -n " [info] " ;;
+         3) echo -n "  [msg] " ;;
+         4) echo -n "  [dbg] " ;;
+      esac
+
+      echo $@
+   fi
+}
+
+hd() {
+	echo $1
+}
+
+cmds='sign|apply|check|git-tpl|list|help'
+
+if ! echo $cmd | grep -P "($cmds)" > /dev/null; then
+   echo "usage: $0 <$cmds>" >&2
    exit 1
 fi
-
-. ./$target
-
-[ ! -z "$SYNC_AGENTS" ] && sync_agents=$SYNC_AGENTS
-
-log 4 "verbosity: $verbosity"
-log 4 "dry-run: $sideeffects"
-log 4 "action: $action"
-log 4 "args: $args"
-log 4 "sync-agents: $sync_agents"
 
 #### some important functions ... the real red meat  ####
 
@@ -133,7 +185,9 @@ integrity_check () {
       exit 4
    fi
    for key in $GPG_KEYS; do
-      if [ $verbosity -lt 4 ]; then
+      if [ $verbosity -le 3 ]; then
+          gpg --recv-key --quiet $key > /dev/null
+      elif [ $verbosity -eq 4 ]; then
           gpg --recv-key --quiet $key
       else
           gpg --recv-key $key
@@ -144,9 +198,9 @@ integrity_check () {
    # cuss dirname old version of `dirname` only takes single arg
    manifests=$(find . -name 'manifest.*' -exec dirname '{}' \; | sort -u)
 
+   log 4 "verifying manifests w/"$methods
    foreach file_integrity $manifests
 
-   log 4 "verifying manifest w/"$methods
    if [ -z "$PASSED" ]
    then
       log 1 "integrity check failed, integrity not available" >&2
@@ -177,6 +231,7 @@ file_integrity() {
          then
             # only need to check strongest method available
             # cryptographically useless to check weaker methods once we pass
+            log 4 "$method: file $1/$file"
             PASSED="$method"
             break
          else
@@ -236,6 +291,11 @@ match_copy() {
       if [ "$stats" != "$statd" ]; then
          # noncritical failure
          log 2 'pickle and target do not match, check lsattr and ownership'
+         log -1 "--- a/$file"
+         log -1 "+++ b/$target"
+         echo
+         log -1 "-$statd"
+         log -1 "+$stats"
       fi
 
       # diff is what's important
@@ -283,31 +343,62 @@ match_copy() {
 }
 
 generate_manifest() {
-    catalogs=$@
+   dirs=$@
 
 	method=$(hd $methods)
 
-    if [ $# -eq 0 ]; then
-       catalogs=$(find . -type d -name 'files' -exec dirname '{}' \; | sort -r)
-    fi
+   if [ $# -eq 0 ]; then
+      dirs=$(find . -type d -name 'files' -exec dirname '{}' \; | sort -r)
+   fi
 
-    for catalog in $catalogs; do
-       if [ -d "$catalog" ]; then
-          rm -f $catalog/manifest.$method
-          log 2 "Generating $method manifest for $catalog"
-          cd $catalog
-          find -L . -type f |
-             grep -Pv '^\./(inst|\.|manifest\.|(?:[^/]+/)+files)' | sort |
-             xargs $method > $check_filename.$method
-          if [ "yes" = "$sign" ]; then
-             log 2 "Signing $catalog/$check_filename.$method.gpg"
-             gpg --sign $check_filename.$method
-          fi
-          cd $OLDPWD
-       else
-          log 4 "Refusing to generate manifest for $catalog, not a directory"
-       fi
-    done
+   for dir in $dirs; do
+      if [ -d "$dir" ]; then
+         log 2 "Generating $method manifest for $dir"
+         cd $dir
+         chksum1=$($method $check_filename.$method | awk '{print $1}')
+
+         find -L . -type f |
+            grep -Pv '^\./(inst|\.|manifest\.|(?:[^/]+/)+files)' | sort |
+            xargs $method > $check_filename.$method
+
+         chksum2=$($method $check_filename.$method | awk '{print $1}')
+
+         log 4 "manifest $check_filename.$method/a: $chksum1"
+         log 4 "manifest $check_filename.$method/b: $chksum2"
+
+         # Only sign a new manifest IF there have been changes
+         if [ "yes" = "$sign" ] && [ "$chksum1" != "$chksum2" ]; then
+            log 2 "Signing $dir/$check_filename.$method.gpg"
+            gpg --yes --sign $GPG_OPTS $check_filename.$method
+         fi
+         cd $OLDPWD
+      else
+         log 4 "Refusing to generate manifest for '$dir', not a directory"
+      fi
+   done
+}
+
+generate_pre_commit() {
+   overwrite=y
+
+   if [ -e .git/hooks/pre-commit ]; then
+      echo "File .git/hooks/pre-commit exists, overwrite? [Yn]"
+      read overwrite
+   fi
+   if [ "y" = $overwrite ]; then
+      echo "saving pre-commit hook"
+      cat > .git/hooks/pre-commit <<EOF
+#!/bin/sh
+GPG_OPTS='$GPG_OPTS' $(pwd)/gone sign --quiet
+manifests=\$(git status --porcelain | awk '/manifest/{print \$NF}' | sort -u)
+
+if [ ! -z "\$manifests" ]; then
+	echo "manifests updated, you need to ammend the changes"
+   echo "manifests: \$manifests"
+fi
+EOF
+         chmod +x .git/hooks/pre-commit
+      fi
 }
 
 # off or on by default?
@@ -317,20 +408,64 @@ else
    check_methods=$methods
 fi
 
-case $action in
-   apply)
-      # kick the script - basically what chef, slaughter and puppet does
-      # execute all the modules and then sync any file non-module files
-      [ "yes" = $integrity ] && integrity_check $args
+sync() {
+   deps=""
+   log 2 "syncing package '$1'"
+   if [ -f "$1" ]; then
+      . $1
+   elif [ -d "$1" ]; then
+      match_copy $1
+      [ -f "$1/apply" ] && . $1/apply
+   else
+      log 1 "package '$1' does not exist"
+   fi
 
-      for agent in $sync_agents; do
-         $agent
-      done
-      ;;
-   integrity)
-      integrity_check $args
-      ;;
-   generate)
+   [ ! -z "$deps" ] && ( log 3 "deps: $1 -> $deps"; foreach sync $deps; )
+}
+
+case "$cmd" in
+   sign)
       generate_manifest $args
       ;;
+   apply)
+      # kick the script - basically what chef, slaughter and puppet does
+      # execute all the appliances and then sync my files
+      [ "yes" = $integrity ] && integrity_check $args
+
+      if [ -z "$args" ]; then
+         for cat in $catalogs; do
+         # no special case for defaults
+         files=..
+         log 4 "applying catalog $cat"
+            for m in $(eval echo \$$cat); do
+               args="$args $cat/$m"
+            done
+         done
+
+         echo 
+      fi
+      foreach sync $args
+      ;;
+   check)
+      integrity_check $args
+      ;;
+   git-tpl)
+      generate_pre_commit
+      ;;
+   list)
+      for cat in $catalogs; do
+         # no special case for defaults
+         files=..
+         echo "Applying: $cat"
+         for m in $(eval echo \$$cat); do
+            echo " * $cat/$m"
+         done
+      done
+      ;;
+   help)
+      usage
+      ;;
+   *)
+      echo "Wtf happend error, no such command '$cmd'" >&2
+      exit 1
 esac
