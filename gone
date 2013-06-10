@@ -70,6 +70,11 @@ usage () {
    echo "  7   GPG integrity check failed"
 }
 
+# Globals, overriden by export
+FQDN=${FQDN:-`hostname -f`}
+HOST=${HOST:-`hostname`}
+CATALOGS=${CATALOGS:-"defaults modules"}
+
 verbosity=2
 cmd=
 integrity=yes
@@ -77,10 +82,10 @@ sideeffects=yes
 sign=yes
 methods='sha512sum sha384sum sha256sum sha1sum md5sum'
 check_filename=manifest
-fqdn=${fqdn:-`hostname -f`}
-host=${host:-`hostname`}
-catalogs=${catalogs:-"files modules"}
 args=""
+
+# Store the synced appliances
+[ -z "_GONE_APPLIED" ] && export _GONE_APPLIED=""
 
 do_args() {
    _method_buf=""
@@ -409,18 +414,20 @@ else
 fi
 
 sync() {
+   echo $_GONE_APPLIED | grep $1 > /dev/null && return 0
+
    deps=""
    log 2 "syncing package '$1'"
    if [ -f "$1" ]; then
       . $1
+      _GONE_APPLIED="$_GONE_APPLIED $1"
    elif [ -d "$1" ]; then
       match_copy $1
       [ -f "$1/apply" ] && . $1/apply
+      _GONE_APPLIED="$_GONE_APPLIED $1"
    else
       log 1 "package '$1' does not exist"
    fi
-
-   [ ! -z "$deps" ] && ( log 3 "deps: $1 -> $deps"; foreach sync $deps; )
 }
 
 case "$cmd" in
@@ -432,18 +439,18 @@ case "$cmd" in
       # execute all the appliances and then sync my files
       [ "yes" = $integrity ] && integrity_check $args
 
+      DEFAULTS=..
       if [ -z "$args" ]; then
-         for cat in $catalogs; do
-         # no special case for defaults
-         files=..
-         log 4 "applying catalog $cat"
-            for m in $(eval echo \$$cat); do
+         for cat in $CATALOGS; do
+            log 4 "applying catalog $cat"
+
+            catvar=$(echo $cat | tr '[a-z]' '[A-Z]')
+            for m in $(eval echo \$$catvar); do
                args="$args $cat/$m"
             done
          done
-
-         echo 
       fi
+
       foreach sync $args
       ;;
    check)
@@ -453,9 +460,9 @@ case "$cmd" in
       generate_pre_commit
       ;;
    list)
-      for cat in $catalogs; do
+      for cat in $CATALOGS; do
          # no special case for defaults
-         files=..
+         DEFAULTS=..
          echo "Applying: $cat"
          for m in $(eval echo \$$cat); do
             echo " * $cat/$m"
