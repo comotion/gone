@@ -1,0 +1,26 @@
+#!/bin/sh
+# grab and install prads
+# comotion@krutt.org
+
+PKG=bup
+REPO=git://github.com/bup/$PKG.git
+
+#apt-get install python2.6-dev python-fuse
+#apt-get install python-pyxattr python-pylibacl
+#apt-get install linux-libc-dev
+# or
+apt-get build-dep bup
+
+mkdir -p inst
+cd inst
+if [ ! -d $PKG/.git ]
+then
+   git clone $REPO
+fi
+
+cd $PKG
+git pull
+
+make
+make install
+

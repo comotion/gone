@@ -11,16 +11,26 @@ if [ -z "$NICE" ]; then
     NICE=0
 fi
 
+if [ -z "$RUN_CHECK_ON_BATTERY" ]; then
+    RUN_CHECK_ON_BATTERY="false"
+fi
+
+# Do not run daily check if running on battery except if explicitely allowed
+if [ -x /usr/bin/on_ac_power >/dev/null 2>&1 ]; then
+    on_ac_power >/dev/null 2>&1
+    [ $? -eq 1 -a "$RUN_CHECK_ON_BATTERY" != "true" ] && exit 0
+fi
+
 case "$CRON_DAILY_RUN" in
-     [Yy]*)
-       	OUTFILE=`mktemp` || exit 1
+     [YyTt]*)
+        OUTFILE=`mktemp` || exit 1
         /usr/bin/nice -n $NICE $RKHUNTER --cronjob --report-warnings-only --appendlog > $OUTFILE
           if grep -q '^Warning: The file properties have changed:' $OUTFILE
              then
              echo "Cron is updating the database so this nag mail doesn't come back" >> $OUTFILE
              rkhunter --propupd
           fi
-        if [ -s "$OUTFILE" ]; then
+        if [ -s "$OUTFILE" -a -n "$REPORT_EMAIL" ]; then
           (
             echo "Subject: [rkhunter] $(hostname -f) - Daily report"
             echo "To: $REPORT_EMAIL"

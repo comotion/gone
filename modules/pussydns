@@ -37,6 +37,12 @@ echo "dig axfr +tcp @$MYADDR my.domain.foo"
 echo "checkout pussydns"
 dns@repo.delta9.pl:/dns/pussydns/
 
+cat > /etc/cron.d/pussydns << EOF
+# m h dom mon dow user  command
+*/5 *   * * *   root    cd /etc/dns && make
+
+EOF
+
 ln -s /etc/dns/pussydns/pussydns.sh /etc/dns/pussydns.sh
 ln -s /etc/dns/zones /etc/dns/pussydns/zones
 

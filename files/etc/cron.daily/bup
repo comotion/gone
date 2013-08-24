@@ -1,0 +1,21 @@
+#!/bin/sh
+
+# Backup everything
+## comotion 2012-02-16
+
+TARGETS="/home /var/mail /etc /var/backups"
+REMOTE=backup:bup
+
+x=/tmp/bup/exclude_fifo
+mkdir -p `dirname $x`
+h=`hostname`
+
+for target in $TARGETS
+do
+   find $target -type p > $x
+   bup index -x --exclude-from $x $target >/dev/null
+   bup save -9q -r $REMOTE -n $h $target >/dev/null
+   echo "$target indexed and backed up"
+done
+
+

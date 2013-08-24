@@ -4,6 +4,7 @@
 # try hard to only overwrite silly defaults
 # comotion@krutt.org
 
+apt-get install john chkrootkit rkhunter
 for user in root kwy comotion
 do
   if getent passwd $user >/dev/null
