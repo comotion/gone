@@ -2,6 +2,7 @@
 set -x
 network=${1:-link}
 subnet=172.42.0
+netmask=255.255.0.0
 shift
 me=`hostname`
 hosts="$me $@"
@@ -14,6 +15,7 @@ Name = $me
 Mode = switch
 
 EOF
+# make (new) private key: TODO: don't if exists
 yes '' | tincd -n $network -K
 for host in $hosts
 do
@@ -30,7 +32,7 @@ do
 done
 ipseq=$((RANDOM%240+10)) # hopefully we don't roll the dice
 echo '#!/bin/sh' > $network/tinc-up
-echo "ifconfig $network $subnet.$ipseq netmask 255.255.255.0" >> $network/tinc-up
+echo "ifconfig $network $subnet.$ipseq netmask $netmask" >> $network/tinc-up
 chmod +x $network/tinc-up
 echo $subnet.$ipseq $me
 
