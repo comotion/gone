@@ -1,34 +1,38 @@
-
+#!/bin/sh
+set -x
 network=${1:-link}
 subnet=172.42.0
 shift
-hosts="`hostname` $@"
+me=`hostname`
+hosts="$me $@"
 
 apt-get install tinc
 cd /etc/tinc
 mkdir -p $network/hosts
 cat > $network/tinc.conf << EOF
-Name = $host
+Name = $me
 Mode = switch
 
+EOF
 yes '' | tincd -n $network -K
 for host in $hosts
 do
    seq=$((seq+1))
-   echo Address=`nslookup $host | awk '/^Address: / { print $2 }` >> $network/hosts/$host
+   echo Address=`nslookup $host | awk '/^Address: / { print $2 }'` >> $network/hosts/$host
    echo Port=2655 >> $network/hosts/$host
-   if [ "$host" = "`hostname`" ]
+   if [ "$host" = "$me" ]
       then
       cat $network/rsa_key.pub >> $network/hosts/$host
    else
       echo Add pubkey of $host to $network/hosts/$host
    fi
    echo ConnectTo=$host >> $network/tinc.conf
-   echo '#!/bin/sh' > $network/tinc-up
 done
-ipseq=$(($RANDOM%240+10)) # hopefully we don't roll the dice
+ipseq=$((RANDOM%240+10)) # hopefully we don't roll the dice
+echo '#!/bin/sh' > $network/tinc-up
 echo "ifconfig $network $subnet.$ipseq netmask 255.255.255.0" >> $network/tinc-up
 chmod +x $network/tinc-up
-echo $subnet.$ipseq `hostname`
+echo $subnet.$ipseq $me
 
 echo $networkname >> /etc/tinc/nets.boot
+
