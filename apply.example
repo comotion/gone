@@ -1,0 +1,38 @@
+#!/bin/sh
+
+# Example configuration on how to apply default, module specific and
+# host specific configuration
+
+# Ensure these keys are available
+export GPG_KEYS="107B264D CE49888C 845B49F2"
+export MODULES="base ossec ssh"
+export CATALOGS="defaults modules fqdn"
+
+[ -z "$@" ] && args=apply || args=$@
+
+./gone $args
+
+# Some other alternative approaches:
+#
+# Gone does not define how you structure your data, so for instance
+# if you would like to group hosts by their domain name you could
+# do this:
+#export HOST=$(dnsdomain)/$(hostname)
+#export CATALOGS="HOST"
+#
+# The above will give allow you to have a folder host/ containing <domain>/<host>
+#
+# Adding a general 'role based' model is also straight forward,
+# there are two approaches, put everything in your ./apply file
+# and do a case "$host" in .....:
+## ROLE=""
+## CATALOGS="defaults role"
+## case "$(hostname)" in
+##   db-*)  ROLE=db-server ;;
+##   app-*) ROLE=app-server ;;
+## esac
+#
+# Or you can run gone recursively from within a host file (e.g, host/db-a1/apply)
+## gone apply role/db-server
+
+

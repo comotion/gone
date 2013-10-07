@@ -1,0 +1,478 @@
+#!/bin/sh
+# ex: ft=sh expandtab tabstop=3
+# yes the shell
+# 2010-08-31 Kacper Wysocki <comotion@krutt.org> Initial version
+#
+# bottom up is better than top down
+
+usage () {
+   echo "Apply a gone configuration to the host"
+   echo
+   echo "usage: $0 [opts= <command> [<pkgs>,..]"
+   echo
+   echo "Commands:"
+   echo "========="
+   echo " sign     Generate manifests and sign"
+   echo " apply    Apply a configuration"
+   echo " check    Validate manifests and signatures"
+   echo " git-tpl  Generate git pre-commit template"
+   echo " list     List packages requirements for this system"
+   echo " help     Shows this help text"
+   echo
+   echo "General Options:"
+   echo "================"
+   echo
+   echo " -h, --help"
+   echo "     Show this help text"
+   echo
+   echo " -q, --quite"
+   echo "     Display minimal output"
+   echo
+   echo " -v, --verbose"
+   echo "     Increase verbosity level (takes multiple)"
+   echo
+   echo " -d, --dry-run"
+   echo "     Just pretend, won't change anything"
+   echo
+   echo " -H <method>, --hashes <method>"
+   echo "     Set allowed hash methods"
+	echo
+	echo
+   echo "Sign options:"
+   echo "============="
+   echo " If required, additional options can be passed to GPG by using"
+   echo " the GPG_OPTS environemental variable"
+   echo
+   echo " -n, --no-gpg"
+   echo "     Don't sign the package"
+   echo
+   echo
+   echo "Apply options:"
+   echo "============="
+   echo
+   echo " -i, --ignore-check"
+   echo "     Don't perform manifest integrity checks"
+   echo
+   echo
+   echo "Check options:"
+   echo "============="
+   echo
+   echo " -n, --no-gpg"
+   echo "     Don't check package signature"
+   echo
+   echo
+   echo "Error codes:"
+   echo "============"
+   echo "  1   Unknown command"
+   echo "  2   Manifest integrity failure"
+   echo "  3   Error, integrity check not performed."
+   echo "  4   Missing GPG"
+   echo "  7   GPG integrity check failed"
+}
+
+# Globals, overriden by export
+FQDN=${FQDN:-`hostname -f`}
+HOST=${HOST:-`hostname`}
+CATALOGS=${CATALOGS:-"defaults modules"}
+
+verbosity=2
+cmd=
+integrity=yes
+sideeffects=yes
+sign=yes
+methods='sha512sum sha384sum sha256sum sha1sum md5sum'
+check_filename=manifest
+args=""
+
+# Store the synced appliances
+[ -z "_GONE_APPLIED" ] && export _GONE_APPLIED=""
+
+do_args() {
+   _method_buf=""
+   while [ "$#" -gt 0 ]; do
+      case "$1" in
+         -h|--help)
+            usage
+            exit 0
+            ;;
+         -q|--quiet)
+            verbosity=0
+            ;;
+         -v|--verbose)
+            verbosity=$(( $verbosity + 1 ))
+            ;;
+         -d|--dry-run)
+            sideeffects=no
+            ;;
+         -H|--hashes)
+            shift;
+            methods=""
+            while true; do case "$1" in
+               -*) break 2;;
+               *) shift; methods="$methods $1" ;;
+            esac done
+            ;;
+         -n|--no-gpg)
+            sign=no
+            ;;
+         -i|--ignore-check)
+            integrity=no
+            ;;
+         -*)
+            echo "Unknown argument: $1" >&2
+            exit 1
+            ;;
+         *)
+            [ -z "$cmd" ] && cmd=$1 || args="$args $1"
+            ;;
+      esac
+      shift
+   done
+   [ ! -z "$_method_buf" ] && methods=$_method_buf
+}
+
+do_args $@
+
+foreach() {
+   cmd=$1
+   shift;
+   for call in $@
+   do
+      $cmd $call
+   done
+}
+
+log() {
+   level=$1
+   shift
+   if [ $verbosity  -ge $level ] || [ "yes" = "$DEBUG" ]; then
+      case "$level" in
+        -1) echo -n "        " ;;
+         0) echo -n "[fatal] " ;;
+         1) echo -n "  [err] " ;;
+         2) echo -n " [info] " ;;
+         3) echo -n "  [msg] " ;;
+         4) echo -n "  [dbg] " ;;
+      esac
+
+      echo $@
+   fi
+}
+
+hd() {
+	echo $1
+}
+
+cmds='sign|apply|check|git-tpl|list|help'
+
+if ! echo $cmd | grep -P "($cmds)" > /dev/null; then
+   echo "usage: $0 <$cmds>" >&2
+   exit 1
+fi
+
+#### some important functions ... the real red meat  ####
+
+# do integrity check of all available methods.
+# normally you're only using one method, the safest one you can afford
+# contrived to allow you to decide which one(s) when generating the manifest(s)
+# just by signing the manifests you want to use.
+# someone might have snuck in a file that is missing in the manifest, so only use
+# the manifest when applying files.
+
+#
+# XXX:
+# Do we want to do this the hard way? This needs more than just a manifest:
+# there is a multiuser use case for signing some files with a different key.
+PASSED=
+integrity_check () {
+   if [ -z "`which gpg`" ]; then
+      log 1 "gpg not available, can't guarantee integrity" >&2
+      exit 4
+   fi
+   for key in $GPG_KEYS; do
+      if [ $verbosity -le 3 ]; then
+          gpg --recv-key --quiet $key > /dev/null
+      elif [ $verbosity -eq 4 ]; then
+          gpg --recv-key --quiet $key
+      else
+          gpg --recv-key $key
+      fi
+   done
+
+   # Debian's coreutils are pre-historic, we can't use xargs `dirname`
+   # cuss dirname old version of `dirname` only takes single arg
+   manifests=$(find . -name 'manifest.*' -exec dirname '{}' \; | sort -u)
+
+   log 4 "verifying manifests w/"$methods
+   foreach file_integrity $manifests
+
+   if [ -z "$PASSED" ]
+   then
+      log 1 "integrity check failed, integrity not available" >&2
+      exit 3
+   fi
+}
+
+file_integrity() {
+   cd $1
+   for method in $methods
+   do
+      file=$check_filename.$method
+      if [ -f $file.gpg ]
+      then
+         # no sense checking if we're missing programs
+         if [ -z "`which $method`" ]
+         then
+            log 1 "integrity check failed, method '$method' not available" >&2
+            continue
+         fi
+
+         [ -f $file ] && mv $file $file.old
+         gpg --yes --output $file -d $file.gpg || exit 7
+         diff $file.old $file
+
+         # ah the shittiness of bash exit codes
+         if $method --quiet -c $file
+         then
+            # only need to check strongest method available
+            # cryptographically useless to check weaker methods once we pass
+            log 4 "$method: file $1/$file"
+            PASSED="$method"
+            break
+         else
+            log 1 "$method: file $1/$file  " >&2
+            exit 2
+         fi
+      fi
+   done
+   cd $OLDPWD
+}
+
+match_copy() {
+# substitute installed copies for version controlled ones
+   srcdir=$1
+   shift
+   check_methods=`shift`
+   workdir=$PWD
+   if [ -z "$check_methods" ]; then
+      # no signature, no manifest
+      FILES="`[ -d \"$srcdir/files\" ] && find -L "$srcdir/files" -type f | sort`"
+   else
+      # close a loophole by using files from the manifest only
+      FILES=`cat manifest.$PASSED | cut -f 1 -d ' ' --complement | grep '^ \./files/' | sed 's/^ .\/files\///'`
+      [ $! ] && exit 2 # quit on error
+   fi
+
+   #♯ why the hello not rsync?: b/c diff!
+   # files should be relative paths
+   for file in $FILES; do
+      target=`echo $file | sed 's/.*\/files\//\//'`
+      if [ ! -f $target ]
+         then
+         if [ -d `dirname $target` ]
+         then
+            if [ "yes" = $sideeffects ]; then
+               log 3 "install target ($file -> $target)"
+               cp -a $file $target
+             else
+               log 3 "install target ($file -> $target) [dry-run]"
+             fi;
+         else
+            log 1 "not installing $file, no target dir"
+         fi
+         continue
+      fi
+      # XXX: remember attribs, uid/gid, extattr and selinux context
+      # any and all uniquely definable characteristics of the file
+      # problem: bash sux for this :-(
+      #stati=`stat -t $file` # terse pickle
+      #stato=`stat -t $target` # terse target
+      #stata=( $stats ) # an array. arrays suck in dash
+      statd=`stat -c '%a %u %g %C' $file 2>/dev/null`
+      stats=`stat -c '%a %u %g %C' $target 2>/dev/null`
+      attrs=`lsattr "$target" | awk '{print $1}'`
+
+      # compare the pickle with the target
+      if [ "$stats" != "$statd" ]; then
+         # noncritical failure
+         log 2 'pickle and target do not match, check lsattr and ownership'
+         log -1 "--- a/$file"
+         log -1 "+++ b/$target"
+         echo
+         log -1 "-$statd"
+         log -1 "+$stats"
+      fi
+
+      # diff is what's important
+      if ! diff -bud $target $file || [ $? = 2 ]
+      then
+         if [ -z "$USER_CHOSE" ]
+         then
+            if [ "yes" = $sideeffects ]; then
+                echo "$target $stats $attrs"
+                echo " $file.$statd"
+                echo "[] $target"
+                echo "$file doesn't match local copy, (a)pply, (commit) or [SKIP]?"
+                read choose
+            else
+               log 2 "$file doesn't match local copy [dry-run]"
+               choose=ignore
+            fi
+         else
+            choose=$USER_CHOSE
+         fi
+
+         case $choose in
+            [aA])
+               log 3 "overriding target ($file -> $target)"
+               cp -a $file $target
+               ;;
+
+            commit)
+               log 3 "commiting target ($target -> $file)"
+               cp -a $target $file
+               git diff $file
+               git add $file
+               git commit
+               ;;
+
+            ignore)
+               ;;
+
+            *)
+               # skip
+         esac
+      fi
+   done
+   cd $workdir
+}
+
+generate_manifest() {
+   dirs=$@
+
+	method=$(hd $methods)
+
+   if [ $# -eq 0 ]; then
+      dirs=$(find . -type d -name 'files' -exec dirname '{}' \; | sort -r)
+   fi
+
+   for dir in $dirs; do
+      if [ -d "$dir" ]; then
+         log 2 "Generating $method manifest for $dir"
+         cd $dir
+         chksum1=$($method $check_filename.$method | awk '{print $1}')
+
+         find -L . -type f |
+            grep -Pv '^\./(inst|\.|manifest\.|(?:[^/]+/)+files)' | sort |
+            xargs $method > $check_filename.$method
+
+         chksum2=$($method $check_filename.$method | awk '{print $1}')
+
+         log 4 "manifest $check_filename.$method/a: $chksum1"
+         log 4 "manifest $check_filename.$method/b: $chksum2"
+
+         # Only sign a new manifest IF there have been changes
+         if [ "yes" = "$sign" ] && [ "$chksum1" != "$chksum2" ]; then
+            log 2 "Signing $dir/$check_filename.$method.gpg"
+            gpg --yes --sign $GPG_OPTS $check_filename.$method
+         fi
+         cd $OLDPWD
+      else
+         log 4 "Refusing to generate manifest for '$dir', not a directory"
+      fi
+   done
+}
+
+generate_pre_commit() {
+   overwrite=y
+
+   if [ -e .git/hooks/pre-commit ]; then
+      echo "File .git/hooks/pre-commit exists, overwrite? [Yn]"
+      read overwrite
+   fi
+   if [ "y" = $overwrite ]; then
+      echo "saving pre-commit hook"
+      cat > .git/hooks/pre-commit <<EOF
+#!/bin/sh
+GPG_OPTS='$GPG_OPTS' $(pwd)/gone sign --quiet
+manifests=\$(git status --porcelain | awk '/manifest/{print \$NF}' | sort -u)
+
+if [ ! -z "\$manifests" ]; then
+	echo "manifests updated, you need to ammend the changes"
+   echo "manifests: \$manifests"
+fi
+EOF
+         chmod +x .git/hooks/pre-commit
+      fi
+}
+
+# off or on by default?
+if [ "no" = $integrity ]; then
+   check_methods=
+else
+   check_methods=$methods
+fi
+
+sync() {
+   echo $_GONE_APPLIED | grep $1 > /dev/null && return 0
+
+   deps=""
+   log 2 "syncing package '$1'"
+   if [ -f "$1" ]; then
+      . $1
+      _GONE_APPLIED="$_GONE_APPLIED $1"
+   elif [ -d "$1" ]; then
+      match_copy $1
+      [ -f "$1/apply" ] && . $1/apply
+      _GONE_APPLIED="$_GONE_APPLIED $1"
+   else
+      log 1 "package '$1' does not exist"
+   fi
+}
+
+case "$cmd" in
+   sign)
+      generate_manifest $args
+      ;;
+   apply)
+      # kick the script - basically what chef, slaughter and puppet does
+      # execute all the appliances and then sync my files
+      [ "yes" = $integrity ] && integrity_check $args
+
+      DEFAULTS=..
+      if [ -z "$args" ]; then
+         for cat in $CATALOGS; do
+            log 4 "applying catalog $cat"
+
+            catvar=$(echo $cat | tr '[a-z]' '[A-Z]')
+            for m in $(eval echo \$$catvar); do
+               args="$args $cat/$m"
+            done
+         done
+      fi
+
+      foreach sync $args
+      ;;
+   check)
+      integrity_check $args
+      ;;
+   git-tpl)
+      generate_pre_commit
+      ;;
+   list)
+      for cat in $CATALOGS; do
+         # no special case for defaults
+         DEFAULTS=..
+         echo "Applying: $cat"
+         for m in $(eval echo \$$cat); do
+            echo " * $cat/$m"
+         done
+      done
+      ;;
+   help)
+      usage
+      ;;
+   *)
+      echo "Wtf happend error, no such command '$cmd'" >&2
+      exit 1
+esac
