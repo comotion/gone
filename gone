@@ -90,7 +90,7 @@ args=""
 [ -z "_GONE_APPLIED" ] && export _GONE_APPLIED=""
 
 # Maybe add to path to allow recursion
-command -v gone > /dev/null || PATH=$(realpath $(dirname $0)):$PATH
+command -v gone > /dev/null || PATH=$(cd $(dirname $0) && pwd):$PATH
 
 do_args() {
    _method_buf=""
