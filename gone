@@ -34,7 +34,7 @@ usage () {
    echo " -d, --dry-run"
    echo "     Just pretend, won't change anything"
    echo
-   echo " -H <method>, --hashes <method>"
+   echo " -m, --hash-methods method1 [method2] ..."
    echo "     Set allowed hash methods"
 	echo
 	echo
@@ -63,7 +63,7 @@ usage () {
    echo
    echo "Error codes:"
    echo "============"
-   echo "  1   Unknown command"
+   echo "  1   Error in user input"
    echo "  2   Manifest integrity failure"
    echo "  3   Error, integrity check not performed."
    echo "  4   Missing GPG"
@@ -80,7 +80,7 @@ cmd=
 integrity=yes
 sideeffects=yes
 sign=yes
-methods='sha512sum sha384sum sha256sum sha1sum md5sum'
+hashmethods='sha512sum sha384sum sha256sum sha1sum md5sum'
 check_filename=manifest
 args=""
 
@@ -104,12 +104,21 @@ do_args() {
          -d|--dry-run)
             sideeffects=no
             ;;
-         -H|--hashes)
+         -H|--hash-methods)
             shift;
-            methods=""
-            while true; do case "$1" in
-               -*) break 2;;
-               *) shift; methods="$methods $1" ;;
+            hashmethods=""
+            while [ "$#" -gt 0 ]; do case "$1" in
+               -*)
+                  break 2;;
+               *)
+                  if ! command -v "$1" > /dev/null
+                  then
+                     echo "error: unknown command '$1', can't be used for integrity check";
+                     exit 1
+                  fi
+
+                  hashmethods="$hashmethods $1"
+                  shift ;;
             esac done
             ;;
          -n|--no-gpg)
@@ -128,7 +137,7 @@ do_args() {
       esac
       shift
    done
-   [ ! -z "$_method_buf" ] && methods=$_method_buf
+   [ ! -z "$_method_buf" ] && hashmethods=$_method_buf
 }
 
 do_args $@
@@ -172,7 +181,7 @@ fi
 
 #### some important functions ... the real red meat  ####
 
-# do integrity check of all available methods.
+# do integrity check of all available hash methods.
 # normally you're only using one method, the safest one you can afford
 # contrived to allow you to decide which one(s) when generating the manifest(s)
 # just by signing the manifests you want to use.
@@ -203,7 +212,7 @@ integrity_check () {
    # cuss dirname old version of `dirname` only takes single arg
    manifests=$(find . -name 'manifest.*' -exec dirname '{}' \; | sort -u)
 
-   log 4 "verifying manifests w/"$methods
+   log 4 "verifying manifests w/"$hashmethods
    foreach file_integrity $manifests
 
    if [ -z "$PASSED" ]
@@ -215,7 +224,7 @@ integrity_check () {
 
 file_integrity() {
    cd $1
-   for method in $methods
+   for method in $hashmethods
    do
       file=$check_filename.$method
       if [ -f $file.gpg ]
@@ -234,10 +243,9 @@ file_integrity() {
          # ah the shittiness of bash exit codes
          if $method --quiet -c $file
          then
-            # only need to check strongest method available
-            # cryptographically useless to check weaker methods once we pass
             log 4 "$method: file $1/$file"
             PASSED="$method"
+            # only need to check strongest method available, so it's safe to break
             break
          else
             log 1 "$method: file $1/$file  " >&2
@@ -252,9 +260,9 @@ match_copy() {
 # substitute installed copies for version controlled ones
    srcdir=$1
    shift
-   check_methods=`shift`
+   check_hashmethods=`shift`
    workdir=$PWD
-   if [ -z "$check_methods" ]; then
+   if [ -z "$check_hashmethods" ]; then
       # no signature, no manifest
       FILES="`[ -d \"$srcdir/files\" ] && find -L "$srcdir/files" -type f | sort`"
    else
@@ -350,7 +358,7 @@ match_copy() {
 generate_manifest() {
    dirs=$@
 
-	method=$(hd $methods)
+	method=$(hd $hashmethods)
 
    if [ $# -eq 0 ]; then
       dirs=$(find . -type d -name 'files' -exec dirname '{}' \; | sort -r)
@@ -360,9 +368,11 @@ generate_manifest() {
       if [ -d "$dir" ]; then
          log 2 "Generating $method manifest for $dir"
          cd $dir
-         chksum1=$($method $check_filename.$method | awk '{print $1}')
+         chksum1=$([ -e $check_filename.$method ] &&
+            $method $check_filename.$method | awk '{print $1}' ||
+            echo "(none)")
 
-         find -L . -type f |
+         find . -type f |
             grep -Pv '^\./(inst|\.|manifest\.|(?:[^/]+/)+files)' | sort |
             xargs $method > $check_filename.$method
 
@@ -408,9 +418,9 @@ EOF
 
 # off or on by default?
 if [ "no" = $integrity ]; then
-   check_methods=
+   check_hashmethods=
 else
-   check_methods=$methods
+   check_hashmethods=$hashmethods
 fi
 
 sync() {
