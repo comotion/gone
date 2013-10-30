@@ -45,6 +45,9 @@ usage () {
    echo
    echo " -n, --no-gpg"
    echo "     Don't sign the package"
+
+   echo " --sign-with key>"
+   echo "     Sign using the <key>"
    echo
    echo
    echo "Apply options:"
@@ -80,6 +83,7 @@ cmd=
 integrity=yes
 sideeffects=yes
 sign=yes
+signkey=
 hashmethods='sha512sum sha384sum sha256sum sha1sum md5sum'
 check_filename=manifest
 args=""
@@ -123,6 +127,10 @@ do_args() {
             ;;
          -n|--no-gpg)
             sign=no
+            ;;
+         --sign-with)
+            shift
+            signkey=$1
             ;;
          -i|--ignore-check)
             integrity=no
@@ -384,7 +392,7 @@ generate_manifest() {
          # Only sign a new manifest IF there have been changes
          if [ "yes" = "$sign" ] && [ "$chksum1" != "$chksum2" ]; then
             log 2 "Signing $dir/$check_filename.$method.gpg"
-            gpg --yes --sign $GPG_OPTS $check_filename.$method
+            gpg  ${signkey:+--local-user $signkey} --yes --sign $GPG_OPTS $check_filename.$method
          fi
          cd $OLDPWD
       else
