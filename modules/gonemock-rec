@@ -1,0 +1,6 @@
+#!/bin/sh
+
+echo "Mocking reucirsivly"
+
+gone apply modules/gonemock
+
