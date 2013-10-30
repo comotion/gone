@@ -245,10 +245,10 @@ file_integrity() {
             continue
          fi
 
-         [ -f $file ] && mv $file $file.old
-         gpg --yes --output $file -d $file.gpg || exit 7
-         diff $file.old $file
-         rm $file.old
+         [ -f $file ] && cp $file /tmp/gone-$file.old
+         gpg --yes -q -d $file.gpg > /dev/null || exit 7
+         diff /tmp/gone-$file.old $file
+         rm /tmp/gone-$file.old
 
          # ah the shittiness of bash exit codes
          if $method --quiet -c $file
