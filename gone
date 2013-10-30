@@ -15,7 +15,6 @@ usage () {
    echo " sign     Generate manifests and sign"
    echo " apply    Apply a configuration"
    echo " check    Validate manifests and signatures"
-   echo " git-tpl  Generate git pre-commit template"
    echo " list     List packages requirements for this system"
    echo " help     Shows this help text"
    echo
@@ -180,7 +179,7 @@ hd() {
 	echo $1
 }
 
-cmds='sign|apply|check|git-tpl|list|help'
+cmds='sign|apply|check|list|help'
 
 if ! echo $cmd | grep -P "($cmds)" > /dev/null; then
    echo "usage: $0 <$cmds>" >&2
@@ -402,29 +401,6 @@ generate_manifest() {
    done
 }
 
-generate_pre_commit() {
-   overwrite=y
-
-   if [ -e .git/hooks/pre-commit ]; then
-      echo "File .git/hooks/pre-commit exists, overwrite? [Yn]"
-      read overwrite
-   fi
-   if [ "y" = $overwrite ]; then
-      echo "saving pre-commit hook"
-      cat > .git/hooks/pre-commit <<EOF
-#!/bin/sh
-GPG_OPTS='$GPG_OPTS' $(pwd)/gone sign --quiet
-manifests=\$(git status --porcelain | awk '/manifest/{print \$NF}' | sort -u)
-
-if [ ! -z "\$manifests" ]; then
-	echo "manifests updated, you need to ammend the changes"
-   echo "manifests: \$manifests"
-fi
-EOF
-         chmod +x .git/hooks/pre-commit
-      fi
-}
-
 # off or on by default?
 if [ "no" = $integrity ]; then
    check_hashmethods=
@@ -453,6 +429,7 @@ case "$cmd" in
    sign)
       generate_manifest $args
       ;;
+
    apply)
       # kick the script - basically what chef, slaughter and puppet does
       # execute all the appliances and then sync my files
@@ -472,12 +449,11 @@ case "$cmd" in
 
       foreach sync $args
       ;;
+
    check)
       integrity_check $args
       ;;
-   git-tpl)
-      generate_pre_commit
-      ;;
+
    list)
       for cat in $CATALOGS; do
          # no special case for defaults
@@ -488,9 +464,11 @@ case "$cmd" in
          done
       done
       ;;
+
    help)
       usage
       ;;
+
    *)
       echo "Wtf happend error, no such command '$cmd'" >&2
       exit 1
