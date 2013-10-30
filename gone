@@ -75,7 +75,6 @@ usage () {
 # Globals, overriden by export
 FQDN=${FQDN:-`hostname -f`}
 HOST=${HOST:-`hostname`}
-CATALOGS=${CATALOGS:-"defaults modules"}
 
 verbosity=2
 cmd=
@@ -439,18 +438,6 @@ case "$cmd" in
       # execute all the appliances and then sync my files
       [ "yes" = $integrity ] && integrity_check $args
 
-      DEFAULTS=..
-      if [ -z "$args" ]; then
-         for cat in $CATALOGS; do
-            log 4 "applying catalog $cat"
-
-            catvar=$(echo $cat | tr '[a-z]' '[A-Z]')
-            for m in $(eval echo \$$catvar); do
-               args="$args $cat/$m"
-            done
-         done
-      fi
-
       foreach sync $args
       ;;
 
@@ -459,14 +446,12 @@ case "$cmd" in
       ;;
 
    list)
-      for cat in $CATALOGS; do
-         # no special case for defaults
-         DEFAULTS=..
-         echo "Applying: $cat"
-         for m in $(eval echo \$$cat); do
-            echo " * $cat/$m"
-         done
-      done
+      papp() {
+         echo " * " $1
+      }
+      echo "Running $(echo $args | wc -w) appliances:"
+      echo "--------------------------------------------------------"
+      foreach papp $args
       ;;
 
    help)
