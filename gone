@@ -390,7 +390,8 @@ generate_manifest() {
          log 4 "manifest $check_filename.$method/b: $chksum2"
 
          # Only sign a new manifest IF there have been changes
-         if [ "yes" = "$sign" ] && [ "$chksum1" != "$chksum2" ]; then
+         if [ "yes" = "$sign" ]
+         then
             log 2 "Signing $dir/$check_filename.$method.gpg"
             gpg  ${signkey:+--local-user $signkey} --yes --sign $GPG_OPTS $check_filename.$method
          fi
