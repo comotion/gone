@@ -12,7 +12,7 @@ I want my scripts to be standalone.
 ## Introducing the gone system:
 **Install and run**
 ```bash
-git clone git://github.com/comotion/gone.git && cd gone && ./apply
+git clone git://github.com/comotion/gone.git && cd gone && ./gone apply
 ```
 
 Works by having several _packages_ that can be applied to a system.
@@ -23,28 +23,25 @@ with gone. You can add any _catalog_ you want, typically you will
 have one catalog containing host specific configuration or roles.
 
 ## Example
+
 **Install a base system and some host specific configurations:**
+
 ```bash
+./apply
+--------------------------------------------------------------------
 #!/bin/sh
-# ./apply - top-level configuration
-# ./host/foo.bar/files/ ....
-# ./host/baz.bar/files/ ....
+# All the files you need to sync is in `modules/base` and host
+# specifics are in `host/<hostnane>`. You can run ./apply to run the
+applicances.
 
 # Catalogs is read by ./gone script
-catalogs="modules host"
-modules="basesys sshd ossec"
-host=$(hostname -f)
-
-./gone apply $@
+./gone apply ${@:-modules/base host/$(hostname)}
 ```
 
-`gone` expands the value of each element in `$catalogs` and appends
-the value. The above example will expand to
-`modules/basesys modules/sshd modules/sshd host/$(hostname -f)`
+Any appliance can be one of 1) a script, 2) a folder containing any
+one of `./files/` or `./apply`. It can be structured any way you like.
 
-```bash
-./apply will run the package
-```
+
 
 ## Todo
 Idempotence. "do $foo only when $bar got updated"
