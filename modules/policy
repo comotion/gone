@@ -42,7 +42,8 @@ if [ -f $c ]
     done
     if ! grep -q '^ *Ciphers' $c
         then
-        echo 'Ciphers aes256-ctr,aes192-ctr,aes128-ctr,arcfour256,aes128-cbc' >> $c
+        # disable gcmrekey.adv and prefer stronger crypto
+        echo 'Ciphers aes256-ctr,aes192-ctr,aes128-ctr,blowfish-cbc,arcfour256,aes192-cbc,aes128-cbc' >> $c
     fi
     if ! grep -q '^ *MACs' $c
         then
