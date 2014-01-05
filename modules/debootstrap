@@ -6,7 +6,7 @@ set -x
 DISTRO=$1
 if [ -z "$DISTRO" ]
    then
-   DISTRO=squeeze
+   DISTRO=jessie
 fi
 # default is host arch
 ARCH=$2
