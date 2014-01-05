@@ -27,9 +27,9 @@ USER_UPDATE_RULES=yes
 
 apt-get install build-essential wget
 
-MAJ_VER=2.7
+MAJ_VER=2.7.1
 SOURCE=http://www.ossec.net/files
-PKG=ossec-hids-2.7
+PKG=ossec-hids-${MAJ_VER}
 workdir=$PWD
 
 set -x
