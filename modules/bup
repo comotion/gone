@@ -22,5 +22,13 @@ cd $PKG
 git pull
 
 make
+make test
 make install
+
+# bup index -ux /home/zz
+# bup save -n laptop /home/zz
+# bup save -r mysever -n laptop /home/zz
+# bup on myserver index -ux /home/zz
+# bup on myserver save -n server /home/zz
+# bup ls laptop/latest/home/zz
 
