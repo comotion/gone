@@ -52,7 +52,7 @@ if [ -f $c ]
 fi
 
 # sshd: disable dsa and ecdsa, and use strong ciphers
-sed -i 's/^(HostKey .*dsa)/#\1/' /etc/ssh/sshd_config
+sed -i 's/^HostKey .*dsa/#&/' /etc/ssh/sshd_config
 if ! grep -q '^ *Ciphers ' /etc/ssh/sshd_config
    then
    sed -i '/^HostKey .*/a \
