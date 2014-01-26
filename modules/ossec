@@ -9,7 +9,7 @@
 
 # server, agent, local
 USER_INSTALL_TYPE=${1:-agent}
-#USER_AGENT_SERVER_IP=
+USER_AGENT_SERVER_IP=$2
 #USER_EMAIL_ADDRESS=
 USER_EMAIL_SMTP=localhost
 
@@ -26,6 +26,14 @@ USER_NO_STOP=yes
 USER_UPDATE_RULES=yes
 
 apt-get install build-essential wget
+if [ "$3" = "binary" ]
+then
+   USER_BINARYINSTALL=yes
+   apt-get install wget
+else
+   apt-get install build-essential wget
+fi
+
 
 MAJ_VER=2.7.1
 SOURCE=http://www.ossec.net/files
@@ -64,4 +72,7 @@ sed ’s/maild.full_subject=1/maild.full_subject=0/g’ etc/internal_options.con
 cd $workdir
 cp files/etc/init.d/ossec /etc/init.d/ossec
 update-rc.d ossec start 12 2 . stop 90 0 6 .
+
+# enable realtime check
+sed -i 's/directories check_all=/directories realtime="yes" check_all=/' ossec.
 
