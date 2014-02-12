@@ -1,0 +1,24 @@
+#!/bin/sh
+# grsecurity is greater security for linux
+
+if [ -f /etc/debian_version ]
+   then
+   cd /usr/src
+   #apt-get install linux-patch-grsecurity2 linux-source make-kpkg
+   # oldschool, and non-functional
+   #tar xf linux-source-3.2.tar.bz2
+   #cd linux-source-3.2
+   #PATCH_THE_KERNEL=YES make-kpkg -j 4 -us -uc --append_to_version lied kernel_image
+
+   apt-get install linux-patch-grsecurity2 gcc-4.7-plugin-dev
+   apt-get source linux devscripts
+   # hardcore patching action 
+   cd linux-3.2.51
+   wget https://delta9.pl/pub/lied/grsec-debian.patch | patch -p1 
+   wget https://delta9.pl/pub/lied/grsec-config-desktop -O .config
+   make deb-pkg LOCALVERSION=-lied
+fi
+
+
+
+
