@@ -15,14 +15,17 @@ do
 done
 
 BLACKFILE=/etc/modprobe.d/blacklist.conf
-BLACKLIST='rds econet'
-for module in $BLACKLIST
-do
-    if ! grep -q "blacklist $module" $BLACKFILE
-        then
-        echo "blacklist $module" >> $BLACKFILE
-    fi
-done
+if [ -d `basename $BLACKFILE` ]
+   then
+   BLACKLIST='rds econet'
+   for module in $BLACKLIST
+   do
+       if ! grep -q "blacklist $module" $BLACKFILE
+           then
+           echo "blacklist $module" >> $BLACKFILE
+       fi
+   done
+fi
 
 if [ -f /etc/default/grub ] && ! grep -q supports_quiet /etc/default/grub
     then
@@ -49,6 +52,16 @@ if [ -f $c ]
         then
         echo 'MACs hmac-md5,hmac-sha1,umac-64@openssh.com,hmac-ripemd160' >> $c
     fi
+fi
+
+# sshd: disable dsa and ecdsa, and use strong ciphers
+sed -i 's/^HostKey .*dsa/#&/' /etc/ssh/sshd_config
+if ! grep -q '^ *Ciphers ' /etc/ssh/sshd_config
+   then
+   sed -i '/^HostKey .*/a \
+Ciphers aes256-ctr,aes128-ctr\
+MACs hmac-sha2-512,hmac-sha2-256,hmac-ripemd160\
+KexAlgorithms diffie-hellman-group-exchange-sha256,diffie-hellman-group14-sha1,diffie-hellman-group-exchange-sha1' /etc/ssh/sshd_config
 fi
 
 

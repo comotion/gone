@@ -1,0 +1,13 @@
+#!/bin/sh
+# install CPM from source, but get deps from apt
+# 
+# NOTE: if you want to just install debs, just do 
+# apt-get install cpm instead
+
+apt-get -y install jp2a caca-utils libcdk5-dev libcrack-dev libcrack2-dev libdotconf-dev libgpgme-dev libgpgme11-dev txt2man
+cd inst
+git clone git://github.com/comotion/cpm
+cd cpm
+./configure
+make install
+
