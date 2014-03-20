@@ -5,18 +5,15 @@
 
 ./gone ${@:-apply defaults host/${hostname -f} modules/gonemock}
 
-# Some other alternative approaches:
-#
-# Gone does not define how you structure your data, so for instance
-# if you would like to group hosts by their domain name you could
-# do this:
+# Gone does not define how you structure your data, so instead
+# if you would like to group hosts by their domain name you could write:
 #
 # ./gone ${@:-apply defaults host/$(dnsdomain)/$(hostname) modules/gonemock}
 #
 # The above will give allow you to have a catalog `host/` where
 # applicances are named `<domain>/<host>`
 #
-# Adding a general 'role based' model is also straight forward,
+# Adding a general 'role based' model is also straightforward,
 # there are two approaches, put everything in your ./apply file
 # and do a case "$host" in .....:
 ## case "$(hostname)" in
