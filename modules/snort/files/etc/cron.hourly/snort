@@ -1,0 +1,68 @@
+#! /bin/bash
+
+set -ex
+
+check_if_new() {
+   old_file=$1
+   url=$2
+   old_md5=`cat $old_file`
+   new_md5=`wget -q $url -O - | sed 's/"//g' | awk '/^[0-9a-f]/ { print $1 }'`
+   new_md5="$new_md5"
+
+   # old md5 exists and is same as new
+   if [ -n "$old_md5" ]
+      then
+      if [ "$old_md5" = "$new_md5" ]
+         then
+         return 1
+      fi
+   fi
+   return 0
+}
+
+oink=a68096c6638c17cdce07fb7eb3f28b3d41981304
+get_vrt() {
+   #oink=9b3c4d511daf586a869c8f8e9447db3449066894
+   #oink=268be40015e45f296a928e0a344bf494106ea0fc
+
+   pushd /etc/snort
+   #wget -q http://www.snort.org/pub-bin/oinkmaster.cgi/$oink/snortrules-snapshot-2.8.tar.gz -O - | tar xzf - 
+   wget -q http://www.snort.org/pub-bin/oinkmaster.cgi/$oink/snortrules-snapshot-2853.tar.gz -O - | tar xzf -
+   popd
+}
+
+get_et(){
+   pushd /etc/snort/
+   wget http://rules.emergingthreats.net/open/snort-2.8.6/emerging.rules.tar.gz -O - | tar xzf - 
+   popd
+}
+
+NEW=
+old_file=/tmp/vrt_md5
+if check_if_new $old_file http://www.snort.org/pub-bin/oinkmaster.cgi/$oink/snortrules-snapshot-2853.tar.gz.md5
+   then
+   if get_vrt
+      then
+      echo $new_md5 > $old_file
+      NEW="VRT"
+   else
+      echo "failed to get VRT" >&2
+   fi
+fi
+
+old_file=/tmp/et_md5
+if check_if_new $old_file http://rules.emergingthreats.net/open/snort-2.8.6/emerging.rules.tar.gz.md5
+   then
+   if get_et
+      then
+      echo $new_md5 > $old_file
+      NEW="$NEW ET"
+   else
+      echo "failed to get ET" >&2
+   fi
+fi
+
+[ -n "$NEW" ] && /etc/init.d/snort reload > /dev/null
+
+exit 0
+
