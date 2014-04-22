@@ -1,0 +1,75 @@
+#!/bin/bash
+### BEGIN INIT INFO
+# Provides:		carbon
+# Required-Start:	$remote_fs $syslog
+# Required-Stop:	$remote_fs $syslog
+# Should-Start:		$local_fs
+# Should-Stop:		$local_fs
+# Default-Start:	2 3 4 5
+# Default-Stop:		0 1 6
+# Short-Description:    Graphite Carbon
+# Description:          Carbon storage backend for Graphite
+### END INIT INFO
+ 
+NAME=carbon
+USER=www-data
+RETVAL=0
+
+[ -r /etc/default/$NAME ] && . /etc/default/$NAME
+
+. /lib/lsb/init-functions
+ 
+start() {
+	echo -n $"Starting $NAME: "
+	
+	PYTHONPATH=/usr/local/lib/python2.7/dist-packages/ su $USER -c '/opt/graphite/bin/carbon-cache.py start'
+	RETVAL=$?
+	
+	if [ $RETVAL = 0 ]; then
+		log_daemon_msg "carbon started"
+	else
+		log_daemon_msg "carbon failed to start"
+	fi
+	
+	echo
+	return $RETVAL
+}
+ 
+stop() {
+	echo -n $"Stopping $NAME: "
+	
+	PYTHONPATH=/usr/local/lib/python2.7/dist-packages/ su $USER -c '/opt/graphite/bin/carbon-cache.py stop' > /dev/null 2>&1
+	RETVAL=$?
+	
+	if [ $RETVAL = 0 ]; then
+		log_daemon_msg "carbon stopped"
+	else
+		log_daemon_msg "carbon failed to stop"
+	fi
+	
+	echo
+	return $RETVAL
+}
+ 
+# See how we were called.
+case "$1" in
+  start)
+	start
+	;;
+  stop)
+	stop
+	;;
+  status)
+	PYTHONPATH=/usr/local/lib/python2.7/dist-packages/ su $USER -c '/opt/graphite/bin/carbon-cache.py status'
+	RETVAL=$?
+	;;
+  restart)
+	stop
+	start
+	;;
+  *)
+	log_action_msg $"Usage: $NAME {start|stop|restart|status}"
+	exit 1
+esac
+ 
+exit $RETVAL

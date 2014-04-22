@@ -1,0 +1,33 @@
+#!/bin/sh
+
+RIEMANN_TOOLS_DAEMONS=${RIEMANN_TOOLS_DAEMONS:-health}
+
+
+gone apply modules/daemontools
+
+apt-get install -qy ruby-dev
+gem list -li riemann-tools > /dev/null || gem install -V --no-rdoc --no-ri riemann-tools
+
+gem list -li riemann-client > /dev/null || gem install riemann-client
+gem list -li riemann-tools > /dev/null || gem install riemann-tools
+
+if [ ! -z "$RIEMANN_TOOLS_SERVER" ]; then
+    for service in $RIEMANN_TOOLS_DAEMONS; do
+        args=RIEMANN_TOOLS_$(echo $service | tr '[a-z]' '[A-Z]')_ARGS
+        [ ! -d /service/riemann-$service ] && mkdir /service/riemann-$service
+        [ ! -d /service/riemann-$service/log ] && mkdir /service/riemann-$service/log
+
+	cat > /service/riemann-$service/log/run <<EOF
+#!/bin/bash
+PATH=/usr/local/bin:/usr/bin:/bin
+exec cat >> ./service.log
+EOF
+
+        cat > /service/riemann-$service/run <<EOF
+#!/bin/sh
+exec riemann-$service -h $RIEMANN_TOOLS_SERVER $(eval echo \$$args)
+EOF
+	chmod +x /service/riemann-$service/run
+	chmod +x /service/riemann-$service/log/run
+    done
+fi

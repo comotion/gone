@@ -1,0 +1,59 @@
+#!/bin/sh
+# ex: ft=sh expandtab tabstop=4
+
+RIEMANN_DASH=${RIEMANN_DASH:-yes}
+
+apt-get install -qy curl bzip2 openjdk-7-jre-headless
+
+cachedir=/var/cache/gone
+file=http://aphyr.com/riemann/riemann_0.2.4_all.deb
+md5sum=${file}.md5
+
+target=$cachedir/$(basename $file)
+targetmd5=$cachedir/$(basename $md5sum)
+
+
+mkdir -p $cachedir
+[ -e "$target" ] || (cd $cachedir; curl -O $file)
+[ -e "$targetmd5" ] || (cd $cachedir; curl -O $md5sum)
+sed -i -E 's/(\w)\s(\w)/\1  \2/' "$targetmd5"
+ 
+i=0
+valid_md5() {
+    [ $i -gt 1 ] && { echo "something went wrong, manualy download riemann files" >&2; exit 1; }
+    cd $cachedir && md5sum -c $targetmd5 > /dev/null || (\
+        echo "checksum mistmatch for '$(basename $file)', (re)downloading...."; \
+        cd $cachedir && curl -O $file; \
+	i=$(($i+1))
+	valid_md5
+    )
+}
+
+
+valid_md5
+dpkg -s riemann > /dev/null || dpkg -i $target
+service riemann start
+update-rc.d riemann defaults
+
+if [ "yes" = "$RIEMANN_DASH" ]; then
+    gone apply modules/daemontools
+    gem list -li riemann-dash > /dev/null || gem install -V --no-rdoc --no-ri riemann-dash
+
+    [ ! -d /service/riemann-dash ] && mkdir /service/riemann-dash
+    DASHEXEC=$(command -v riemann-dash)
+    cat > /service/riemann-dash/run <<EOF
+#!/bin/sh
+USER=${RIEMANN_DASH_USER:-www-data}
+exec setuidgid \$USER $DASHEXEC /etc/riemann-dash.rb
+EOF
+
+    [ -e /etc/riemann-dash.rb ] || cat > /etc/riemann-dash.rb <<EOF
+set :bind, '127.0.0.1'
+set :port, 4567
+EOF
+
+    chmod +x /service/riemann-dash/run
+    svc -u /service/riemann-dash
+else
+    [ -d '/service/riemann-dash' ] && svc -d /service/riemann-dash
+fi

@@ -1,0 +1,66 @@
+#!/bin/sh
+
+GRAPHITE_WEB=${GRAPHITE_WEB:-yes}
+GRAPHITE_WEB_BIND=${GRAPHITE_WEB_BIND:-127.0.0.1:8080}
+GRAPHITE_WEB_USER=${GRAPHITE_WEB_USER:-www-data}
+
+gone apply modules/daemontools
+
+apt-get install -qy python-pip python-cairo python2.7-dev
+
+pip install 'twisted<12.0' 'django<1.6' django-tagging whisper uwsgi
+
+[ -d /opt/graphite/webapp/graphite ] || pip install graphite-web
+[ -d /opt/graphite/lib/carbon ] || pip install carbon
+
+[ -e /opt/graphite/conf/carbon.conf ] || cp \
+    /opt/graphite/conf/carbon.conf.example \
+    /opt/graphite/conf/carbon.conf
+
+[ -e /opt/graphite/conf/graphite.wsgi ] || cp \
+    /opt/graphite/conf/graphite.wsgi.example \
+    /opt/graphite/conf/graphite.wsgi
+
+[ -e /opt/graphite/conf/storage-schemas.conf ] || cp \
+    /opt/graphite/conf/storage-schemas.conf.example \
+    /opt/graphite/conf/storage-schemas.conf
+
+[ -e /opt/graphite/webapp/graphite/local_settings.py ] || cp \
+    /opt/graphite/webapp/graphite/local_settings.py.example \
+    /opt/graphite/webapp/graphite/local_settings.py
+
+[ -e /opt/graphite/storage/graphite.db ] || ( cd /opt/graphite/webapp/graphite && python manage.py syncdb --noinput)
+
+chown -R www-data:www-data /opt/graphite/
+
+# Fix uwsgi + daemontools
+mkdir -p /service/graphite-web
+cat > /service/graphite-web/run <<EOF
+#!/bin/sh
+
+export GRAPHITE_PATH=/opt/graphite
+export SITE_PATH=\$GRAPHITE_PATH/webapp/graphite
+USER=$GRAPHITE_WEB_USER
+BIND=$GRAPHITE_WEB_BIND
+
+touch /var/log/graphite-web.log
+chown \$USER /var/log/graphite-web.log
+
+exec setuidgid \$USER /usr/local/bin/uwsgi  \\
+    --http \$BIND \\
+    --master \\
+    --processes 4 \\
+    --pythonpath \$SITE_PATH \\
+    --logto2 /var/log/graphite-web.log \\
+    --wsgi-file=\$GRAPHITE_PATH/conf/graphite.wsgi
+EOF
+chmod +x /service/graphite-web/run
+
+if [ "yes" = "$GRAPHITE_WEB" ]; then
+    svc -u /service/graphite-web
+else
+    svc -d /service/graphite-web
+fi
+
+service carbon start
+update-rc.d carbon defaults
