@@ -5,7 +5,7 @@
 #
 # bottom up is better than top down
 
-usage () {
+help() {
    echo "Apply a gone configuration to the host"
    echo
    echo "usage: $0 [opts= <command> [<pkgs>,..]"
@@ -97,7 +97,7 @@ do_args() {
    while [ "$#" -gt 0 ]; do
       case "$1" in
          -h|--help)
-            usage
+            help
             exit 0
             ;;
          -q|--quiet)
@@ -455,7 +455,7 @@ case "$cmd" in
       ;;
 
    help)
-      usage
+      help
       ;;
 
    *)
