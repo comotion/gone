@@ -1,11 +1,15 @@
 #!/bin/sh
 # ex: ft=sh expandtab tabstop=3
 # yes the shell
-# 2010-08-31 Kacper Wysocki <comotion@krutt.org> Initial version
 #
 # bottom up is better than top down
 
-usage () {
+usage() {
+   echo "usage: $0 <sign|apply|check|help|module>" >&2
+   exit 1
+}
+
+help() {
    echo "Apply a gone configuration to the host"
    echo
    echo "usage: $0 [opts= <command> [<pkgs>,..]"
@@ -15,7 +19,6 @@ usage () {
    echo " sign     Generate manifests and sign"
    echo " apply    Apply a configuration"
    echo " check    Validate manifests and signatures"
-   echo " list     List packages requirements for this system"
    echo " help     Shows this help text"
    echo
    echo "General Options:"
@@ -97,7 +100,7 @@ do_args() {
    while [ "$#" -gt 0 ]; do
       case "$1" in
          -h|--help)
-            usage
+            help
             exit 0
             ;;
          -q|--quiet)
@@ -150,13 +153,16 @@ do_args() {
 }
 
 do_args $@
+readonly FQDN HOST verbosity cmd integrity sideeffects sign signkey \
+   hashmethods check_filename args
+
 
 foreach() {
-   cmd=$1
+   innercmd=$1
    shift;
    for call in $@
    do
-      $cmd $call
+      $innercmd $call
    done
 }
 
@@ -180,13 +186,6 @@ log() {
 hd() {
 	echo $1
 }
-
-cmds='sign|apply|check|list|help'
-
-if ! echo $cmd | grep -P "($cmds)" > /dev/null; then
-   echo "usage: $0 <$cmds>" >&2
-   exit 1
-fi
 
 #### some important functions ... the real red meat  ####
 
@@ -428,37 +427,98 @@ sync() {
    fi
 }
 
-case "$cmd" in
-   sign)
-      generate_manifest $args
-      ;;
+# Modular hooks, all functions prefixed with 'gone_module_' can be
+# registered and called. Add the suffix `_show` and/or `_commit`
+# to display the changes and commiting the changes
+_gone_modules="module"
+gone_module_module() {
+   log 4 "adding modules: $@"
+   _gone_modules="$_gone_modules $@"
+}
 
-   apply)
-      # kick the script - basically what chef, slaughter and puppet does
-      # execute all the appliances and then sync my files
-      [ "yes" = $integrity ] && integrity_check $args
+gone_module_show() {
+   echo "+ modules: $_gone_modules"
+   echo
 
-      foreach sync $args
-      ;;
+   for mod in $_gone_modules; do
+      if command -v "gone_module_${mod}_show"  > /dev/null; then
+         echo + $mod
+         echo ------------------
+         "gone_module_${mod}_show"
+         echo
+      fi
+   done
+}
 
-   check)
-      integrity_check $args
-      ;;
 
-   list)
-      papp() {
-         echo " * " $1
-      }
-      echo "Running $(echo $args | wc -w) appliances:"
-      echo "--------------------------------------------------------"
-      foreach papp $args
-      ;;
+gone_module_gpg() {
+   case $1 in
+      add|addkey)
+         shift
+         export GPG_KEYS="$GPG_KEYS $@"
+         ;;
+      *)
+         echo "usage: $0 gpg addkey key1, .., .." >&2
+         exit 1
+   esac
+}
 
-   help)
-      usage
-      ;;
+gone_module_gpg_show() {
+   for k in $GPG_KEYS; do
+      gpginfo=$(gpg --fingerprint $k 2> /dev/null | awk '/@/{$1="";print $0}' || echo "unknown key")
+      echo " -> $gpginfo ($k)"
+   done
+}
 
-   *)
-      echo "Wtf happend error, no such command '$cmd'" >&2
-      exit 1
-esac
+gone_module_gpg_commit() {
+   gpg --recv-keys $GPG_KEYS
+}
+
+gone_module_clean() {
+   find . -type f -name 'manifest.*' -exec rm -v '{}' \;
+}
+
+gone_module_apply() {
+   for mod in $_gone_modules; do
+      if command -v "gone_module_${mod}_commit"  > /dev/null; then
+         log 2 "commiting $cmd"
+         eval "gone_module_${mod}_commit"
+      fi
+   done
+   foreach sync $@
+}
+
+alias gone_module_help=help
+alias gone_module_sign=generate_manifest
+alias gone_module_check=integrity_check
+
+gone() {
+   innercmd=$1
+   shift
+
+   if echo $_gone_modules | grep -q $innercmd; then
+      log 4 "executing module: \`gone $innercmd $@\`"
+      eval "gone_module_$innercmd" "$@"
+   else
+      if command -v "gone_module_$innercmd" > /dev/null; then
+         echo "module '$innercmd' is not registered."
+         echo "try to register using with \`gone module $innercmd\`"
+      else
+         echo "module '$innercmd' was not found...."
+         usage
+         exit 1
+      fi
+   fi
+}
+
+gone module apply sign check show clean help gpg
+
+for inc in $(cat .goneinclude 2> /dev/null); do
+   log 4 "including $inc"
+   . "$inc"
+done
+
+if echo $0 | grep -qP '^(?:\./)?gone$'; then
+   log 4 "calling gone directly"
+   gone $cmd $args
+fi
