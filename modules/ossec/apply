@@ -10,7 +10,7 @@
 # server, agent, local
 
 mdir=`dirname $0`
-[ -f $mdir/common] && source $mdir/common
+[ -f $mdir/common ] && source $mdir/common
 
 USER_INSTALL_TYPE=${USER_INSTALL_TYPE:-${1:-agent}}
 USER_AGENT_SERVER_IP=${USER_INSTALL_TYPE:-$2}
