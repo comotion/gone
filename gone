@@ -415,7 +415,7 @@ sync() {
    deps=""
    log 2 "syncing module '$1'"
    if [ -f "$1" ]; then
-      . $1
+      $1
       _GONE_APPLIED="$_GONE_APPLIED $1"
    elif [ -d "$1" ]; then
       [ -f "$1/apply" ] && $1/apply
