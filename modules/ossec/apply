@@ -9,8 +9,8 @@
 
 # server, agent, local
 
-export MODULE=$(basename $BASH_SOURCE)
-mdir=$(dirname $(dirname $BASH_SOURCE))
+export MODULE=$(basename $0)
+mdir=$(dirname $(dirname $0))
 [ -f $mdir/common ] && source $mdir/common
 
 export USER_INSTALL_TYPE=${USER_INSTALL_TYPE:-agent}

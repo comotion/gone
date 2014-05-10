@@ -1,7 +1,7 @@
 #!/bin/sh
 # idempotent script!
-export MODULE=$(basename $BASH_SOURCE)
-mdir=$(dirname $BASH_SOURCE)
+export MODULE=$(basename $0)
+mdir=$(dirname $0)
 [ -f $mdir/common ] && source $mdir/common
 
 TINC_CONF=${TINC_CONF:-$mdir/../conf/tinc}
