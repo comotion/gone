@@ -16,7 +16,7 @@ MIRROR=http://ftp.no.debian.org/debian
 
 if [ -d $CHROOTSDIR/$TARGET ]
    then # this chroot already here
-   exit 0
+   return 0
 fi
 
 apt-get install debootstrap schroot

@@ -76,7 +76,6 @@ cd ossec-hids-$MAJ_VER
 # make setoneway setfullsubject
 sed -i 's/maild.full_subject=1/maild.full_subject=0/g' etc/internal_options.conf
 sh -x ./install.sh
-exit
 
 # files should have placed an init script for us,
 # but this might have gotten overwritten

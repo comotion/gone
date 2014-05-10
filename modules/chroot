@@ -44,7 +44,7 @@ fi
 if [ -z "$CHROOTUSER" ]
 then
    echo "set CHROOTUSER for uid/bindmount chroot" >&2
-   exit 1
+   return 1
 fi
     
 chmod 700 `dirname $CHROOTDIR`
