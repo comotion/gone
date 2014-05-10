@@ -9,7 +9,7 @@ platform() {
     case $(uname -o) in
         GNU/Linux)
             if [ -f /etc/os-release ]; then
-                grep ID= /etc/os-release | cut -f2 -d=
+                grep ^ID= /etc/os-release | cut -f2 -d=
             elif [ -f /etc/debian_version ]; then
                 echo debian-$(cat debian_version)
             elif [ -f /etc/arch-release ]; then
