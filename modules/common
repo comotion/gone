@@ -3,8 +3,8 @@
 
 # source site-specific module config, if exists
 module=${MODULE:-`basename $0`}
-[ -f conf/$module ] && source conf/$module
-[ -d conf/$module ] && source conf/$module/$module
+[ -f conf/$module ] && . conf/$module
+[ -d conf/$module ] && . conf/$module/$module
 
 platform() {
     case $(uname -o) in

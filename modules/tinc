@@ -2,7 +2,7 @@
 # idempotent script!
 export MODULE=$(basename $0)
 mdir=$(dirname $0)
-[ -f $mdir/common ] && source $mdir/common
+[ -f $mdir/common ] && . $mdir/common
 
 TINC_CONF=${TINC_CONF:-$mdir/../conf/tinc}
 network=${TINC_NETWORK:-${1:-link}}

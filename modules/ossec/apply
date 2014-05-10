@@ -11,7 +11,7 @@
 
 export MODULE=$(basename $(dirname $0))
 mdir=$(dirname $(dirname $0))
-[ -f $mdir/common ] && source $mdir/common
+[ -f $mdir/common ] && . $mdir/common
 
 export USER_INSTALL_TYPE=${USER_INSTALL_TYPE:-agent}
 export USER_AGENT_SERVER_IP=${USER_AGENT_SERVER_IP:-} # no default server
