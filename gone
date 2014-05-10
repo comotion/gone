@@ -418,8 +418,8 @@ sync() {
       . $1
       _GONE_APPLIED="$_GONE_APPLIED $1"
    elif [ -d "$1" ]; then
-      match_copy $1
       [ -f "$1/apply" ] && . $1/apply
+      match_copy $1
       _GONE_APPLIED="$_GONE_APPLIED $1"
    elif [ -f "modules/$1" -o -d "modules/$1" ]; then
       sync "modules/$1"
