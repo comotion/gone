@@ -2,8 +2,9 @@
 # common gone module stuff
 
 # source site-specific module config, if exists
-module=`basename $BASH_SOURCE`
+module=${MODULE:-`basename $0`}
 [ -f conf/$module ] && source conf/$module
+[ -d conf/$module ] && source conf/$module/$module
 
 platform() {
     case $(uname -o) in

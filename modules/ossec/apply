@@ -9,6 +9,7 @@
 
 # server, agent, local
 
+export MODULE=$(basename $BASH_SOURCE)
 mdir=$(dirname $(dirname $BASH_SOURCE))
 [ -f $mdir/common ] && source $mdir/common
 
