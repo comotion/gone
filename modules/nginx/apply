@@ -1,0 +1,4 @@
+#!/bin/sh
+mdir=`dirname $0`
+[ -f $mdir/common ] && source $mdir/common
+apt-get install -y nginx
