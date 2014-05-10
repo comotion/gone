@@ -33,14 +33,6 @@ if [ "$#" -gt 1 -a "$1" != modules/ossec ]; then
     export USER_INSTALL_TYPE=$1
     export USER_AGENT_SERVER_IP=$2
 fi
-if [ "$3" = "binary" -o "$USER_BINARYINSTALL" = "yes" ]
-then
-   export USER_BINARYINSTALL=yes
-   package wget
-else
-   package build-essential wget
-fi
-
 getent group ossec || groupadd -g 1514 ossec
 getent passwd ossec  || useradd -g ossec -u 1514 -s /bin/false -d /var/ossec ossec
 getent passwd ossecm || useradd -g ossec -u 1515 -s /bin/false -d /var/ossec ossecm
@@ -72,6 +64,13 @@ else
    tar xf ossec-hids-latest.tar.gz
 fi
 
+if [ "$3" = "binary" -o "$USER_BINARYINSTALL" = "yes" ]
+then
+   export USER_BINARYINSTALL=yes
+   package wget
+else
+   package build-essential wget
+fi
 
 cd ossec-hids-$MAJ_VER
 # make setoneway setfullsubject
