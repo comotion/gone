@@ -1,13 +1,18 @@
 #!/bin/sh
-#set -x
-network=${1:-link}
-subnet=172.42.0
-netmask=255.255.0.0
-shift
-me=`hostname`
-hosts="$me $@"
+# idempotent script!
+export MODULE=$(basename $BASH_SOURCE)
+mdir=$(dirname $BASH_SOURCE)
+[ -f $mdir/common ] && source $mdir/common
 
-apt-get install tinc
+TINC_CONF=${TINC_CONF:-$mdir/../conf/tinc}
+network=${TINC_NETWORK:-${1:-link}}
+subnet=${TINC_SUBNET:-172.42.0}
+netmask=${TINC_NETMASK:-255.255.0.0}
+shift
+me=${TINC_HOSTNAME:-${HOSTNAME:-`hostname`}}
+hosts=${TINC_HOSTS:-$me $@}
+
+apt-get install -y tinc
 cd /etc/tinc
 mkdir -p $network/hosts
 cat > $network/tinc.conf << EOF
@@ -15,26 +20,38 @@ Name = $me
 Mode = switch
 
 EOF
-# make (new) private key: TODO: don't if exists
-yes '' | tincd -n $network -K
+# make (new) private key:
+test -f $network/rsa_key.priv || 
+   yes '' | tincd -n $network -K
+
 for host in $hosts
 do
-   seq=$((seq+1))
-   echo Address=`nslookup $host | awk '/^Address: / { print $2 }'` >> $network/hosts/$host
-   echo Port=2655 >> $network/hosts/$host
-   if [ "$host" = "$me" ]
+   if [ -f $TINC_CONF/$network/$host ]
       then
-      cat $network/rsa_key.pub >> $network/hosts/$host
+      cp $TINC_CONF/$network/$host $network/hosts/
    else
-      echo Add pubkey of $host to $network/hosts/$host
+      echo Address=`nslookup $host | awk '/^Address: / { print $2 }'` >> $network/hosts/$host
+      echo Port=2655 >> $network/hosts/$host
+      if [ "$host" = "$me" ]
+         then
+         cat $network/rsa_key.pub >> $network/hosts/$host
+      else
+         [ -f $TINC_CONF/$host.pub ] && 
+            cp $TINC_CONF/$host.pub $network/hosts/$host || 
+              echo Add pubkey of $host to $network/hosts/$host >&2
+      fi
    fi
    echo ConnectTo=$host >> $network/tinc.conf
 done
+# semi-crap way of picking an address. internal dns is nicer
 ipseq=$((RANDOM%240+10)) # hopefully we don't roll the dice
-echo '#!/bin/sh' > $network/tinc-up
-echo "ifconfig $network $subnet.$ipseq netmask $netmask" >> $network/tinc-up
-chmod +x $network/tinc-up
-echo $subnet.$ipseq $me
+if [ ! -x $network/tinc-up ]
+   then
+   echo '#!/bin/sh' > $network/tinc-up
+   echo "ifconfig $network $subnet.$ipseq netmask $netmask" >> $network/tinc-up
+   chmod +x $network/tinc-up
+   echo $subnet.$ipseq $me
+fi
 
-echo $networkname >> /etc/tinc/nets.boot
+grep -q $network /etc/tinc/nets.boot || echo $network >> /etc/tinc/nets.boot
 
