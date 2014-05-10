@@ -13,7 +13,7 @@ mdir=$(dirname $(dirname $BASH_SOURCE))
 [ -f $mdir/common ] && source $mdir/common
 
 export USER_INSTALL_TYPE=${USER_INSTALL_TYPE:-agent}
-export USER_AGENT_SERVER_IP=${USER_AGENT_SERVER_IP:-87.237.35.178} # no default server
+export USER_AGENT_SERVER_IP=${USER_AGENT_SERVER_IP:-} # no default server
 export USER_EMAIL_ADDRESS=${USER_EMAIL_ADDRESS:-}
 export USER_EMAIL_SMTP=${USER_EMAIL_SMTP:-localhost}
 
