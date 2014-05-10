@@ -3,7 +3,7 @@
 # Example configuration on how to apply default, host, and module specific configuration
 
 
-./gone ${@:-apply defaults host/${hostname -f} modules/gonemock}
+./gone ${@:-apply defaults conf/defaults host/$(hostname -f) modules/gonemock}
 
 # Gone does not define how you structure your data, so instead
 # if you would like to group hosts by their domain name you could write:

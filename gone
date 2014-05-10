@@ -495,6 +495,10 @@ alias gone_module_check=integrity_check
 gone() {
    innercmd=$1
    shift
+   if [ -z "$innercmd" ]; then
+       usage
+       return
+   fi
 
    if echo $_gone_modules | grep -q $innercmd; then
       log 4 "executing module: \`gone $innercmd $@\`"
