@@ -153,7 +153,7 @@ do_args() {
 }
 
 do_args $@
-readonly FQDN HOST verbosity cmd integrity sideeffects sign signkey \
+readonly FQDN verbosity cmd integrity sideeffects sign signkey \
    hashmethods check_filename args
 
 
