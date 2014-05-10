@@ -413,7 +413,7 @@ sync() {
    echo $_GONE_APPLIED | grep $1 > /dev/null && return 0
 
    deps=""
-   log 2 "syncing package '$1'"
+   log 2 "syncing module '$1'"
    if [ -f "$1" ]; then
       . $1
       _GONE_APPLIED="$_GONE_APPLIED $1"
