@@ -4,3 +4,45 @@
 # source site-specific module config, if exists
 module=`basename $0`
 [ -f conf/$module ] && source conf/$module
+
+platform() {
+    case $(uname -o) in
+        GNU/Linux)
+            if [ -f /etc/os-release ]; then
+                grep ID= /etc/os-release | cut -f2 -d=
+            elif [ -f /etc/debian_version ]; then
+                echo debian-$(cat debian_version)
+            elif [ -f /etc/arch-release ]; then
+                echo arch
+            elif [ -f redhat_release ]; then
+                echo el
+            else
+                echo unknown
+            fi
+
+            ;;
+         *)
+            uname -o
+    esac
+}
+
+# platform-friendly install
+package() {
+    case $(platform) in
+        debian*)
+            apt-get install -y $@
+            ;;
+        el*)
+            yum install -y $@
+            ;;
+        arch*)
+            pacman -Sy $@
+            ;;
+        *)
+            echo "Don't know how to install packages on this distribution. Install $@ on your own, or add package support to $0"
+            ;;
+    esac
+}
+
+
+

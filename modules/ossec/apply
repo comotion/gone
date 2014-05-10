@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 #
 #
 # www.ossec.net
@@ -9,7 +9,8 @@
 
 # server, agent, local
 
-mdir=`dirname $0`
+set -x
+mdir=$(dirname $(dirname $BASH_SOURCE))
 [ -f $mdir/common ] && source $mdir/common
 
 USER_INSTALL_TYPE=${USER_INSTALL_TYPE:-${1:-agent}}
@@ -29,13 +30,12 @@ USER_ENABLE_ACTIVE_RESPONSE=${USER_ENABLE_ACTIVE_RESPONSE:-yes}
 USER_NO_STOP=${USER_NO_STOP:-yes}
 USER_UPDATE_RULES=${USER_UPDATE_RULES:-yes}
 
-apt-get install build-essential wget
 if [ "$3" = "binary" ]
 then
    USER_BINARYINSTALL=yes
-   apt-get install wget
+   package wget
 else
-   apt-get install build-essential wget
+   package build-essential wget
 fi
 
 getent group ossec || groupadd -g 1514 ossec
