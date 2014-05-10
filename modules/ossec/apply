@@ -39,9 +39,9 @@ else
 fi
 
 getent group ossec || groupadd -g 1514 ossec
-getent user ossec  || useradd -g ossec -u 1514 -s /bin/false -d /var/ossec ossec
-getent user ossecm || useradd -g ossec -u 1515 -s /bin/false -d /var/ossec ossecm
-getent user ossecr || useradd -g ossec -u 1516 -s /bin/false -d /var/ossec ossecr
+getent passwd ossec  || useradd -g ossec -u 1514 -s /bin/false -d /var/ossec ossec
+getent passwd ossecm || useradd -g ossec -u 1515 -s /bin/false -d /var/ossec ossecm
+getent passwd ossecr || useradd -g ossec -u 1516 -s /bin/false -d /var/ossec ossecr
 
 
 MAJ_VER=2.7.1
