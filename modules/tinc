@@ -1,5 +1,5 @@
 #!/bin/sh
-set -x
+#set -x
 network=${1:-link}
 subnet=172.42.0
 netmask=255.255.0.0
