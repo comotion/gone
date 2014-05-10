@@ -1,5 +1,5 @@
 #!/bin/bash
-export MODULE=$(basename $0)
+export MODULE=$(basename $(dirname $0))
 mdir=$(dirname $(dirname $0))
 [ -f $mdir/common ] && source $mdir/common
 apt-get install -y nginx
