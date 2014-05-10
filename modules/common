@@ -1,8 +1,8 @@
-#!/bin/sh
+#!/bin/bash
 # common gone module stuff
 
 # source site-specific module config, if exists
-module=`basename $0`
+module=`basename $BASH_SOURCE`
 [ -f conf/$module ] && source conf/$module
 
 platform() {
