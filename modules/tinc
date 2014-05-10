@@ -8,7 +8,6 @@ TINC_CONF=${TINC_CONF:-$mdir/../conf/tinc}
 network=${TINC_NETWORK:-${1:-link}}
 subnet=${TINC_SUBNET:-172.42.0}
 netmask=${TINC_NETMASK:-255.255.0.0}
-shift
 me=${TINC_HOSTNAME:-${HOSTNAME:-`hostname`}}
 hosts=${TINC_HOSTS:-$me $@}
 
