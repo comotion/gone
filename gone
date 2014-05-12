@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 # ex: ft=sh expandtab tabstop=3
 # yes the shell
 #
@@ -76,8 +76,8 @@ help() {
 }
 
 # Globals, overriden by export
-FQDN=${FQDN:-`hostname -f`}
-HOST=${HOST:-`hostname`}
+FQDN=${FQDN:-$(hostname -f)}
+HOST=${HOST:-$(hostname)}
 
 verbosity=2
 cmd=
@@ -93,7 +93,7 @@ args=""
 [ -z "_GONE_APPLIED" ] && export _GONE_APPLIED=""
 
 # Maybe add to path to allow recursion
-command -v gone > /dev/null || PATH=$(cd $(dirname $0) && pwd):$PATH
+command -v gone > /dev/null || PATH=$(cd "$(dirname "$0")" && pwd):$PATH
 
 do_args() {
    _method_buf=""
@@ -107,7 +107,7 @@ do_args() {
             verbosity=0
             ;;
          -v|--verbose)
-            verbosity=$(( $verbosity + 1 ))
+            verbosity=$(( verbosity + 1 ))
             ;;
          -d|--dry-run)
             sideeffects=no
@@ -152,7 +152,7 @@ do_args() {
    [ ! -z "$_method_buf" ] && hashmethods=$_method_buf
 }
 
-do_args $@
+do_args "$@"
 readonly FQDN verbosity cmd integrity sideeffects sign signkey \
    hashmethods check_filename args
 
@@ -160,31 +160,29 @@ readonly FQDN verbosity cmd integrity sideeffects sign signkey \
 foreach() {
    innercmd=$1
    shift;
-   for call in $@
+   for call in "$@"
    do
-      $innercmd $call
+      $innercmd "$call"
    done
 }
 
 log() {
    level=$1
    shift
-   if [ $verbosity  -ge $level ] || [ "yes" = "$DEBUG" ]; then
+   if [ $verbosity  -ge "$level" ] || [ "yes" = "$DEBUG" ]; then
       case "$level" in
-        -1) echo -n "        " ;;
-         0) echo -n "[fatal] " ;;
-         1) echo -n "  [err] " ;;
-         2) echo -n " [info] " ;;
-         3) echo -n "  [msg] " ;;
-         4) echo -n "  [dbg] " ;;
+        -1) echo "        " ;;
+         0) echo "[fatal] $@" ;;
+         1) echo "  [err] $@" ;;
+         2) echo " [info] $@" ;;
+         3) echo "  [msg] $@" ;;
+         4) echo "  [dbg] $@" ;;
       esac
-
-      echo $@
    fi
 }
 
 hd() {
-	echo $1
+	echo "$1"
 }
 
 #### some important functions ... the real red meat  ####
@@ -202,17 +200,17 @@ hd() {
 # there is a multiuser use case for signing some files with a different key.
 PASSED=
 integrity_check () {
-   if [ -z "`which gpg`" ]; then
+   if [ -z "$(which gpg)" ]; then
       log 1 "gpg not available, can't guarantee integrity" >&2
       exit 4
    fi
    for key in $GPG_KEYS; do
       if [ $verbosity -le 3 ]; then
-          gpg --recv-key --quiet $key > /dev/null
+          gpg --recv-key --quiet "$key" > /dev/null
       elif [ $verbosity -eq 4 ]; then
-          gpg --recv-key --quiet $key
+          gpg --recv-key --quiet "$key"
       else
-          gpg --recv-key $key
+          gpg --recv-key "$key"
       fi
    done
 
@@ -221,7 +219,7 @@ integrity_check () {
    manifests=$(find . -name 'manifest.*' -exec dirname '{}' \; | sort -u)
 
    log 4 "verifying manifests w/"$hashmethods
-   foreach file_integrity $manifests
+   foreach file_integrity "$manifests"
 
    if [ -z "$PASSED" ]
    then
@@ -231,14 +229,14 @@ integrity_check () {
 }
 
 file_integrity() {
-   cd $1
+   cd "$1"
    for method in $hashmethods
    do
       file=$check_filename.$method
       if [ -f $file.gpg ]
       then
          # no sense checking if we're missing programs
-         if [ -z "`which $method`" ]
+         if [ -z "$(which $method)" ]
          then
             log 1 "integrity check failed, method '$method' not available" >&2
             continue
@@ -262,34 +260,35 @@ file_integrity() {
          fi
       fi
    done
-   cd $OLDPWD
+   cd "$OLDPWD"
 }
 
 match_copy() {
 # substitute installed copies for version controlled ones
    srcdir=$1
-   check_hashmethods=`shift`
+   check_hashmethods=$(shift)
    workdir=$PWD
    if [ -z "$check_hashmethods" ]; then
       # no signature, no manifest
-      FILES="`[ -d \"$srcdir/files\" ] && find -L "$srcdir/files" -type f | sort`"
+      FILES="$([ -d "$srcdir/files" ] && find -L "$srcdir/files" -type f | sort)"
    else
       # close a loophole by using files from the manifest only
-      FILES=`cat manifest.$PASSED | cut -f 1 -d ' ' --complement | grep '^ \./files/' | sed 's/^ .\/files\///'`
-      [ $! ] && exit 2 # quit on error
+      FILES=$(cut -f 1 -d ' ' --complement | grep '^ \./files/' | sed 's/^ .\/files\///' < manifest.$PASSED)
+      [ $? ] && exit 2 # quit on error
    fi
 
    #♯ why the hello not rsync?: b/c diff!
    # files should be relative paths
    for file in $FILES; do
-      target=`echo $file | sed 's/.*\/files\//\//'`
-      if [ ! -f $target ]
+      #target="${file/*\/files\//\//}" 
+      target="$(echo "$file" | sed 's/.*\/files\//\//')"
+      if [ ! -f "$target" ]
          then
-         if [ -d `dirname $target` ]
+         if [ -d "$(dirname "$target")" ]
          then
             if [ "yes" = $sideeffects ]; then
                log 3 "install target ($file -> $target)"
-               cp -a $file $target
+               cp -a "$file" "$target"
              else
                log 3 "install target ($file -> $target) [dry-run]"
              fi;
@@ -304,9 +303,9 @@ match_copy() {
       #stati=`stat -t $file` # terse pickle
       #stato=`stat -t $target` # terse target
       #stata=( $stats ) # an array. arrays suck in dash
-      statd=`stat -c '%a %u %g %C' $file 2>/dev/null`
-      stats=`stat -c '%a %u %g %C' $target 2>/dev/null`
-      attrs=`lsattr "$target" | awk '{print $1}'`
+      statd=$(stat -c '%a %u %g %C' "$file" 2>/dev/null)
+      stats=$(stat -c '%a %u %g %C' "$target" 2>/dev/null)
+      attrs=$(lsattr "$target" | awk '{print $1}')
 
       # compare the pickle with the target
       if [ "$stats" != "$statd" ]; then
@@ -320,7 +319,7 @@ match_copy() {
       fi
 
       # diff is what's important
-      if ! diff -bud $target $file || [ $? = 2 ]
+      if ! diff -bud "$target" "$file" || [ $? = 2 ]
       then
          if [ -z "$USER_CHOSE" ]
          then
@@ -341,14 +340,14 @@ match_copy() {
          case $choose in
             [aA])
                log 3 "overriding target ($file -> $target)"
-               cp -a $file $target
+               cp -a "$file" "$target"
                ;;
 
             commit)
                log 3 "committing target ($target -> $file)"
-               cp -a $target $file
-               git diff $file
-               git add $file
+               cp -a "$target" "$file"
+               git diff "$file"
+               git add "$file"
                git commit
                ;;
 
@@ -356,15 +355,15 @@ match_copy() {
                ;;
 
             *)
-               # skip
+               echo Skipped
          esac
       fi
    done
-   cd $workdir
+   cd "$workdir"
 }
 
 generate_manifest() {
-   dirs=$@
+   dirs="$@"
 
 	method=$(hd $hashmethods)
 
@@ -375,16 +374,16 @@ generate_manifest() {
    for dir in $dirs; do
       if [ -d "$dir" ]; then
          log 2 "Generating $method manifest for $dir"
-         cd $dir
-         chksum1=$([ -e $check_filename.$method ] &&
-            $method $check_filename.$method | awk '{print $1}' ||
+         cd "$dir"
+         chksum1=$([ -e "$check_filename.$method" ] &&
+            $method "$check_filename.$method" | awk '{print $1}' ||
             echo "(none)")
 
          find . -type f |
             grep -Pv '^\./(inst|\.|manifest\.|(?:[^/]+/)+files)' | sort |
-            xargs $method > $check_filename.$method
+            xargs "$method" > "$check_filename.$method"
 
-         chksum2=$($method $check_filename.$method | awk '{print $1}')
+         chksum2=$($method "$check_filename.$method" | awk '{print $1}')
 
          log 4 "manifest $check_filename.$method/a: $chksum1"
          log 4 "manifest $check_filename.$method/b: $chksum2"
@@ -393,9 +392,9 @@ generate_manifest() {
          if [ "yes" = "$sign" ]
          then
             log 2 "Signing $dir/$check_filename.$method.gpg"
-            gpg  ${signkey:+--local-user $signkey} --yes --sign $GPG_OPTS $check_filename.$method
+            gpg  "${signkey:+--local-user $signkey}" --yes --sign "$GPG_OPTS" "$check_filename.$method"
          fi
-         cd $OLDPWD
+         cd "$OLDPWD"
       else
          log 4 "Refusing to generate manifest for '$dir', not a directory"
       fi
@@ -410,16 +409,15 @@ else
 fi
 
 sync() {
-   echo $_GONE_APPLIED | grep $1 > /dev/null && return 0
+   echo $_GONE_APPLIED | grep "$1" > /dev/null && return 0
 
-   deps=""
    log 2 "syncing module '$1'"
    if [ -f "$1" ]; then
       $1
       _GONE_APPLIED="$_GONE_APPLIED $1"
    elif [ -d "$1" ]; then
-      [ -f "$1/apply" ] && $1/apply
-      match_copy $1
+      [ -f "$1/apply" ] && "$1/apply"
+      match_copy "$1"
       _GONE_APPLIED="$_GONE_APPLIED $1"
    elif [ -f "modules/$1" -o -d "modules/$1" ]; then
       sync "modules/$1"
@@ -443,7 +441,7 @@ gone_module_show() {
 
    for mod in $_gone_modules; do
       if command -v "gone_module_${mod}_show"  > /dev/null; then
-         echo + $mod
+         echo "+ $mod"
          echo ------------------
          "gone_module_${mod}_show"
          echo
@@ -466,13 +464,13 @@ gone_module_gpg() {
 
 gone_module_gpg_show() {
    for k in $GPG_KEYS; do
-      gpginfo=$(gpg --fingerprint $k 2> /dev/null | awk '/@/{$1="";print $0}' || echo "unknown key")
+      gpginfo=$(gpg --fingerprint "$k" 2> /dev/null | awk '/@/{$1="";print $0}' || echo "unknown key")
       echo " -> $gpginfo ($k)"
    done
 }
 
 gone_module_gpg_commit() {
-   gpg --recv-keys $GPG_KEYS
+   gpg --recv-keys "$GPG_KEYS"
 }
 
 gone_module_clean() {
@@ -486,7 +484,7 @@ gone_module_apply() {
          eval "gone_module_${mod}_commit"
       fi
    done
-   foreach sync $@
+   foreach sync "$@"
 }
 
 alias gone_module_help=help
@@ -494,14 +492,14 @@ alias gone_module_sign=generate_manifest
 alias gone_module_check=integrity_check
 
 gone() {
-   innercmd=$1
+   innercmd="$1"
    shift
    if [ -z "$innercmd" ]; then
        usage
        return
    fi
 
-   if echo $_gone_modules | grep -q $innercmd; then
+   if echo "$_gone_modules" | grep -q "$innercmd"; then
       log 4 "executing module: \`gone $innercmd $@\`"
       eval "gone_module_$innercmd" "$@"
    else
@@ -518,12 +516,13 @@ gone() {
 
 gone module apply sign check show clean help gpg
 
-for inc in $(cat .goneinclude 2> /dev/null); do
+while read -m inc .goneinclude 2>/dev/null; do
+#for inc in $(cat .goneinclude 2> /dev/null); do
    log 4 "including $inc"
    . "$inc"
 done
 
-if echo $0 | grep -qP '^(?:\./)?gone$'; then
+if echo "$0" | grep -qP '^(?:\./)?gone$'; then
    log 4 "calling gone directly"
-   gone $cmd $args
+   gone "$cmd" "$args"
 fi
