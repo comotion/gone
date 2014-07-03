@@ -57,6 +57,7 @@ bup save -9q -r $REMOTE -n "$h" $backupset >/dev/null 2>&1 | awk ' BEGIN { skipp
 { line++;  }
 ' > "$t"
 # output is empty if everything is ok.
+rc=0
 if ! test -s "$t"
 then
    logit "I am all backed up."
@@ -65,10 +66,13 @@ elif test -r "$e" && diff -u "$t" "$e"
    then
    logit "Today is the same shit as yesterday. (someone check $e)"
    rm "$t"
+   rc=2
 else
    logit "Bup pooped it, check $t for the details."
    # make this test silent if the same problem repeats
    cp "$t" "$e"
+   rc=1
 fi
 
+exit $rc
 
