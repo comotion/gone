@@ -23,7 +23,7 @@ logit()
    then
       $ii "$@"
    else
-      echo $ii >&2
+      echo "$@" >&2
    fi
 }
 
@@ -34,7 +34,7 @@ do
    backupset="$backupset $target"
 done
 
-bup index -x --exclude-from "$x" $backupset >/dev/null
+bup index -x --exclude-from "$x" $backupset >/dev/null 2>&1 | egrep -v '^Indexing:|^bup: merging indexes'
 bup save -9q -r $REMOTE -n "$h" $backupset >/dev/null 2>&1 | awk ' BEGIN { skipped=0 }
 /^WARNING: [0-9]+ errors encountered while saving/ {
    errors=$2
