@@ -1,21 +1,74 @@
 #!/bin/sh
 
-# Backup everything
+# Backup everything, and optionally log it to somewhere (irc?)
 ## comotion 2012-02-16
+## modified on 2014-01-04 for better backup sets
 
-TARGETS="/home /var/mail /etc /var/backups"
+# set -x
+TARGETS="/home /var/mail /opt /etc"
 REMOTE=backup:bup
 
-x=/tmp/bup/exclude_fifo
-mkdir -p `dirname $x`
-h=`hostname`
+h=$(hostname)
+d=/tmp/bup
+mkdir -p $d
+t=$(tempfile -d "$d")
+e=/var/local/backup_expect
+x=$d/exclude_fifo
+backupset=''
+
+logit()
+{
+   ii=/usr/local/bin/logit
+   if [ -x $ii ]
+   then
+      $ii "$@"
+   else
+      echo $ii >&2
+   fi
+}
 
 for target in $TARGETS
 do
-   find $target -type p > $x
-   bup index -x --exclude-from $x $target >/dev/null
-   bup save -9q -r $REMOTE -n $h $target >/dev/null
-   echo "$target indexed and backed up"
+   [ ! -d "$target" ] && continue
+   find "$target" -type p -or -type s -or -type b -or -type c > $x
+   backupset="$backupset $target"
 done
+
+bup index -x --exclude-from "$x" $backupset >/dev/null
+bup save -9q -r $REMOTE -n "$h" $backupset >/dev/null 2>&1 | awk ' BEGIN { skipped=0 }
+/^WARNING: [0-9]+ errors encountered while saving/ {
+   errors=$2
+   if (errors != skipped){
+      print "HELP, non-trivial errors backing up."
+   }
+   skipped=0
+}
+/^\[Errno 2\] No such file or directory: ..etc.dnscache.log.main/ {
+   skipped++;
+}
+/^skipping special file/ {
+   skipped++;
+}
+/^Warning: Permanently added/ {
+   line++;
+}
+
+!/^(skipping|WARNING:| |Traceback) /
+{ line++;  }
+' > "$t"
+# output is empty if everything is ok.
+if ! test -s "$t"
+then
+   logit "I am all backed up."
+   rm "$t"
+elif test -r "$e" && diff -u "$t" "$e"
+   then
+   logit "Today is the same shit as yesterday. (someone check $e)"
+   rm "$t"
+else
+   logit "Bup pooped it, check $t for the details."
+   # make this test silent if the same problem repeats
+   cp "$t" "$e"
+fi
 
 
