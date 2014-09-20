@@ -9,19 +9,21 @@
 
 # server, agent, local
 
-export MODULE=$(basename $(dirname $0))
-mdir=$(dirname $(dirname $0))
-[ -f $mdir/common ] && . $mdir/common
+mdir=$(dirname $(dirname $BASH_SOURCE))
+[ -f $mdir/common ] && source $mdir/common
 
-export USER_INSTALL_TYPE=${USER_INSTALL_TYPE:-agent}
-export USER_AGENT_SERVER_IP=${USER_AGENT_SERVER_IP:-} # no default server
+export USER_INSTALL_TYPE=${USER_INSTALL_TYPE:-${1:-agent}}
+export USER_AGENT_SERVER_IP=${USER_INSTALL_TYPE:-$2}
 export USER_EMAIL_ADDRESS=${USER_EMAIL_ADDRESS:-}
 export USER_EMAIL_SMTP=${USER_EMAIL_SMTP:-localhost}
 
 export USER_DIR=${USER_DIR:-/var/ossec}
 export USER_UPDATE=${USER_UPDATE:-yes}
 export USER_LANGUAGE=${USER_LANGUAGE:-en}
-export USER_BINARYINSTALL=${USER_BINARYINSTALL:-} # empty means no, all other values mean yes!
+if [ -n "$USER_BINARYINSTALL" ]
+    then
+    export USER_BINARYINSTALL=${USER_BINARYINSTALL:-no}
+fi
 export USER_ENABLE_EMAIL=${USER_ENABLE_EMAIL:-${USER_ENABLE_EMAIL:-yes}}
 export USER_ENABLE_SYSLOG=${USER_ENABLE_SYSLOG:-yes}
 export USER_ENABLE_SYSCHECK=${USER_ENABLE_SYSCHECK:-yes}
@@ -30,59 +32,80 @@ export USER_ENABLE_ACTIVE_RESPONSE=${USER_ENABLE_ACTIVE_RESPONSE:-yes}
 export USER_NO_STOP=${USER_NO_STOP:-yes}
 export USER_UPDATE_RULES=${USER_UPDATE_RULES:-yes}
 
-if [ "$#" -gt 1 -a "$1" != modules/ossec ]; then
-    export USER_INSTALL_TYPE=$1
-    export USER_AGENT_SERVER_IP=$2
+if [ "$3" = "binary" ]
+then
+   USER_BINARYINSTALL=yes
+   package wget
+else
+   package build-essential wget
 fi
+
 getent group ossec || groupadd -g 1514 ossec
 getent passwd ossec  || useradd -g ossec -u 1514 -s /bin/false -d /var/ossec ossec
 getent passwd ossecm || useradd -g ossec -u 1515 -s /bin/false -d /var/ossec ossecm
 getent passwd ossecr || useradd -g ossec -u 1516 -s /bin/false -d /var/ossec ossecr
 
 
-MAJ_VER=2.7.1
+MAJ_VER=2.8.1
 SOURCE=http://www.ossec.net/files
 PKG=ossec-hids-${MAJ_VER}
 workdir=$PWD
 
+set -x
 mkdir -p inst
 cd inst
-wget $SOURCE/${PKG%latest}-checksum.txt -qO - | grep 'SHA1.*gz' | sed 's/hids.*tar.gz/hids-latest.tar.gz/' | tail -n 1 > ossec-hids-latest_sum.txt
+curl -s $SOURCE/${PKG%latest}-checksum.txt | grep 'SHA1.*gz' | sed 's/hids.*tar.gz/hids-latest.tar.gz/' | tail -n 1 > ossec-hids-latest_sum.txt
 if [ -f ossec-hids-sum.txt ] && diff -q ossec-hids-sum.txt ossec-hids-latest_sum.txt && [ -d /var/ossec ]
 then
    echo latest ossec already installed
-   return 0
+   [ -n "$force" ] || exit 0
 elif [ -z "`cat ossec-hids-latest_sum.txt`" ]
 then
    echo "couldn't get update, checking old download"
-   sha1sum -c ossec-hids-sum.txt || return 0
+   sha1sum -c ossec-hids-sum.txt || exit 0
 else
    # Next run should have this file
-   echo "installing new version of ossec"
-   cp ossec-hids-latest_sum.txt ossec-hids-sum.txt
-   wget -c $SOURCE/${PKG}.tar.gz -O ossec-hids-latest.tar.gz
-   sha1sum -c ossec-hids-sum.txt || return 0
+    if [ -f ossec-hids-sum.txt ] && diff -q ossec-hids-sum.txt ossec-hids-latest_sum.txt
+        then
+        echo "installing downloaded version of ossec"
+    else
+       echo "installing new version of ossec"
+       cp ossec-hids-latest_sum.txt ossec-hids-sum.txt
+       rm ossec-hids-latest.tar.gz
+       curl $SOURCE/${PKG}.tar.gz -o ossec-hids-latest.tar.gz
+    fi
+   sha1sum -c ossec-hids-sum.txt || exit 0
    tar xf ossec-hids-latest.tar.gz
 fi
 
-if [ "$3" = "binary" -o "$USER_BINARYINSTALL" = "yes" ]
-then
-   export USER_BINARYINSTALL=yes
-   package wget
-else
-   package build-essential wget
-fi
 
 cd ossec-hids-$MAJ_VER
 # make setoneway setfullsubject
 sed -i 's/maild.full_subject=1/maild.full_subject=0/g' etc/internal_options.conf
-sh -x ./install.sh
+( ./install.sh ) 
 
-# files should have placed an init script for us,
-# but this might have gotten overwritten
 cd $workdir
-cp files/etc/init.d/ossec /etc/init.d/ossec
-update-rc.d ossec start 12 2 . stop 90 0 6 .
+if [ -f /etc/systemd ]
+then
+    cat > ossec.service << EOF
+[Unit]
+Description=OSSEC Host-based Intrusion Detection System
+
+[Service]
+Type=forking
+ExecStart=/var/ossec/bin/ossec-control start
+ExecStop=/var/ossec/bin/ossec-control stop
+
+[Install]
+WantedBy=basic.target
+EOF
+    install -Dm0644 ossec.service /usr/lib/systemd/system/ossec.service
+else # assume sysvinit
+    # files should have placed a nice init script for us,
+    # but this might have gotten overwritten by installer
+    cp files/etc/init.d/ossec /etc/init.d/ossec
+    update-rc.d ossec start 12 2 . stop 90 0 6 .
+fi
 
 # enable realtime check
 sed -i 's/directories check_all=/directories realtime="yes" check_all=/' ossec.
