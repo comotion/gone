@@ -35,9 +35,9 @@ export USER_UPDATE_RULES=${USER_UPDATE_RULES:-yes}
 if [ "$3" = "binary" ]
 then
    USER_BINARYINSTALL=yes
-   package wget
+   package curl
 else
-   package build-essential wget
+   package build-essential curl
 fi
 
 getent group ossec || groupadd -g 1514 ossec
