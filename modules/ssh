@@ -99,6 +99,15 @@ else
     echo "SSH reloaded. Please TEST your SSHD by making a new connection BEFORE disconnecting this session!" >&2
 fi
 
+echo
+echo "For better client security, configure your ssh_config / .ssh/config like so:"
+echo "Host *"
+echo "Ciphers aes256-gcm@openssh.com,aes128-gcm@openssh.com,chacha20-poly1305@openssh.com,aes256-ctr,aes192-ctr,aes128-ctr"
+echo "MACs hmac-sha2-512-etm@openssh.com,hmac-sha2-256-etm@openssh.com,hmac-sha2-512"
+echo "KexAlgorithms curve25519-sha256@libssh.org,diffie-hellman-group-exchange-sha256"
+
+
+
 # controversial options:
 # X11Forwarding
 # AllowTCPForwarding
