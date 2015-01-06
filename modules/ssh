@@ -12,13 +12,57 @@ sed -i \
 -e 's/PermitEmptyPasswords *yes.*/PermitEmptyPasswords no/' \
 /etc/ssh/sshd_config
 
+# should be this but curve25519 is not supported everywhere
+#kex='KexAlgorithms curve25519-sha256@libssh.org,diffie-hellman-group-exchange-sha256'
+
+kex='KexAlgorithms diffie-hellman-group-exchange-sha256'
+
+ciphers='Ciphers aes256-gcm@openssh.com,aes128-gcm@openssh.com,chacha20-poly1305@openssh.com,aes256-ctr,aes192-ctr,aes128-ctr'
+
+macs='MACs hmac-sha2-512,hmac-sha2-256,hmac-ripemd160'
+
+
+if grep -q ^KexAlgorithms /etc/ssh/sshd_config
+then
+   sed -i "s/^KexAlgorithms/$kex/" /etc/ssh/sshd_config
+else
+    echo "$kex" >> /etc/ssh/sshd_config
+fi
+if grep -q ^Ciphers /etc/ssh/sshd_config
+then
+   sed -i "s/^Ciphers/$ciphers/" /etc/ssh/sshd_config
+else
+    echo "$ciphers" >> /etc/ssh/sshd_config
+fi
+if grep -q ^MACs /etc/ssh/sshd_config
+then
+   sed -i "s/^MACs/$macs/" /etc/ssh/sshd_config
+else
+    echo "$macs" >> /etc/ssh/sshd_config
+fi
+
+cd /etc/ssh
+mkdir broken
+mv ssh_host_dsa_key* ssh_host_ecdsa_key* ssh_host_key* broken
+# create broken links to force SSH not to regenerate broken keys
+ln -s ssh_host_ecdsa_key ssh_host_ecdsa_key
+ln -s ssh_host_dsa_key ssh_host_dsa_key
+ln -s ssh_host_key ssh_host_key
+
+# remove weak moduli
+[ -f broken/moduli ] || cp moduli broken
+awk '{ if ($5 > 2048){ print } }' moduli > /tmp/moduli
+mv /tmp/moduli /etc/ssh/moduli
+
 /etc/init.d/ssh reload
+
+echo "Please TEST your SSHD by making a new connection BEFORE disconnecting!" >&2
 
 # controversial options:
 # X11Forwarding
 # AllowTCPForwarding
-# AllowUsers
-# AllowGroups
+# AllowUsers 
+# AllowGroups remote
 # ChrootDirectory
 #
 # Define a remote group and use it for allowed users.
