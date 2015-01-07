@@ -39,19 +39,21 @@ kexup='curve25519-sha256@libssh.org'
 kex='diffie-hellman-group-exchange-sha256'
 
 ciphers='aes256-ctr,aes192-ctr,aes128-ctr'
-ciphersup='aes256-gcm@openssh.com,aes128-gcm@openssh.com,chacha20-poly1305@openssh.com'
+ciphersup='chacha20-poly1305@openssh.com'
 macs='hmac-sha2-512,hmac-sha2-256,hmac-ripemd160'
-macsup='hmac-sha2-512-etm@openssh.com,hmac-sha2-256-etm@openssh.com'
+macsup='hmac-sha2-512-etm@openssh.com,hmac-sha2-256-etm@openssh.com,hmac-ripemd160-etm@openssh.com,umac-128-etm@openssh.com'
+macsend='umac-128@openssh.com'
+
 
 
 
 if [[ "$v" < "5.9" ]]
 then
     echo "shitty old SSH $v detected, please upgrade!"
-elif [[ "$v" > "6.0" ]]
+elif [[ "$v" > "6.4" ]]
 then
     ciphers="$ciphersup,$ciphers"
-    macs="$macsup"
+    macs="$macsup,$macs,$macsend"
     kex="$kexup,$kex"
 fi
 
@@ -86,7 +88,7 @@ ln -s ssh_host_key ssh_host_key
 
 # remove weak moduli
 [ -f broken/moduli ] || cp moduli broken
-awk '{ if ($5 > 2048){ print } }' moduli > /tmp/moduli
+awk '{ if ($5 > 2000){ print } }' moduli > /tmp/moduli
 mv /tmp/moduli moduli
 
 if ! sshd -t
