@@ -64,19 +64,19 @@ if grep -q ^KexAlgorithms sshd_config
 then
    sed -i "s/^KexAlgorithms .*/KexAlgorithms $kex/" sshd_config
 else
-    echo "$kex" >> sshd_config
+    echo "KexAlgorithms $kex" >> sshd_config
 fi
 if grep -q ^Ciphers sshd_config
 then
    sed -i "s/^Ciphers .*/Ciphers $ciphers/" sshd_config
 else
-    echo "$ciphers" >> sshd_config
+    echo "Ciphers $ciphers" >> sshd_config
 fi
 if grep -q ^MACs sshd_config
 then
    sed -i "s/^MACs .*/MACs $macs/" sshd_config
 else
-    echo "$macs" >> sshd_config
+    echo "MACs $macs" >> sshd_config
 fi
 
 mkdir -p broken
