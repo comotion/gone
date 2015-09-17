@@ -46,7 +46,7 @@ getent passwd ossecm || useradd -g ossec -u 1515 -s /bin/false -d /var/ossec oss
 getent passwd ossecr || useradd -g ossec -u 1516 -s /bin/false -d /var/ossec ossecr
 
 
-MAJ_VER=2.8.1
+MAJ_VER=2.8.2
 SOURCE=http://www.ossec.net/files
 PKG=ossec-hids-${MAJ_VER}
 workdir=$PWD
