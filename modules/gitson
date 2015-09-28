@@ -34,8 +34,9 @@ echo "cd /etc/axfrdns && make"
 echo "cd /services && ln -s /etc/axfrdns"
 echo "dig axfr +tcp @$MYADDR my.domain.foo"
 
+mkdir -p /etc/dns && cd /etc/dns
 echo "checkout gitson"
-dns@repo.delta9.pl:/dns/gitson/
+git clone https://github.com/comotion/gitson
 
 cat > /etc/cron.d/gitson << EOF
 # m h dom mon dow user  command
@@ -43,10 +44,11 @@ cat > /etc/cron.d/gitson << EOF
 
 EOF
 
-ln -s /etc/dns/gitson/pussydns.sh /etc/dns/pussydns.sh
+ln -s /etc/dns/gitson/gitson /etc/dns/gitson
 ln -s /etc/dns/zones /etc/dns/gitson/zones
 
 echo "checkout your dns repos"
+cd zones
 for repo in $REPOS
 do
     git clone $repo
