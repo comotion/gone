@@ -37,10 +37,11 @@ fi
 # make sure we don't install twice
 if [ ! -f /etc/inittab ]
    then
-   # fucking upstart.
-   # note Edgy had 'runlevel-2' not 'runlevel 2' nor 'runlevel [2345]'
-   # note older distros put this in /etc/event.d/svscanboot
-   cat >> /etc/init/svscanboot.conf << EOF
+   if [ -d /etc/init/ ]; then
+       # fucking upstart.
+       # note Edgy had 'runlevel-2' not 'runlevel 2' nor 'runlevel [2345]'
+       # note older distros put this in /etc/event.d/svscanboot
+       cat >> /etc/init/svscanboot.conf << EOF
 # svscanboot - DJB's daemontools
 #
 # This service maintains svscanboot from the point the system is
@@ -54,7 +55,23 @@ respawn
 exec /usr/local/bin/svscanboot
 
 EOF
+    elif [ -d /lib/systemd ]; then
+        # fucking daemontools
+        cat >> /lib/systemd/system/daemontools.service << EOF
+[Unit]
+Description=DJB daemontools
+After=sysinit.target
 
+[Service]
+ExecStart=/usr/local/bin/svscanboot
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
+EOF
+        chmod a+r /lib/systemd/system/daemontools.service
+        ln -s /lib/systemd/system/daemontools.service /etc/systemd/system/multi-user.target.wants/ 
+    fi
 elif ! grep -q svscanboot /etc/inittab
 then
    echo SV:123456:respawn:/usr/local/bin/svscanboot >> /etc/inittab
