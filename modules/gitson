@@ -6,6 +6,9 @@
 # otherwise where would we be?
 MYADDR=$1
 set -e
+if [ -z "$MYADDR" ]; then
+    MYADDR=$(hostname -i)
+fi
 
 run_module() {
   module=$1
@@ -22,35 +25,57 @@ run_module() {
 run_module daemontools
 run_module ucspi
 run_module tinydns
-echo ... now configure your service:
-echo dnscache-conf Gdnscache Gdnslog /etc/dnscache 10.53.0.1
-echo ln -s /etc/dnscache/ /service/dnscache
-echo tinydns-conf Gtinydns Gdnslog /etc/tinydns $MYADDR
-echo ln -s /etc/tinydns/ /service/tinydns
-echo ln -s /etc/tinydns/root /etc/dns
-echo axfrdns-conf Gaxfrdns Gdnslog /etc/axfrdns /etc/tinydns $MYADDR
-echo "echo ':allow,AXFR=""' > /etc/axfrdns/tcp"
-echo "cd /etc/axfrdns && make"
-echo "cd /services && ln -s /etc/axfrdns"
-echo "dig axfr +tcp @$MYADDR my.domain.foo"
+if [ -d /service/tinydns ] || [ -d /etc/tinydns ]; then
+    echo TinyDNS already configured, skipping.
+else
+    #echo ... now configure your service:
+    #echo dnscache-conf Gdnscache Gdnslog /etc/dnscache 10.53.0.1
+    #echo ln -s /etc/dnscache/ /service/dnscache
+    tinydns-conf Gtinydns Gdnslog /etc/tinydns $MYADDR
+    ln -s /etc/tinydns/ /service/tinydns
+    ln -s /etc/tinydns/root /etc/dns
+fi
+if [ ! -d /services/axfrdns ]; then
+    axfrdns-conf Gaxfrdns Gdnslog /etc/axfrdns /etc/tinydns $MYADDR
+    echo ':allow,AXFR=""' > /etc/axfrdns/tcp
+    cd /etc/axfrdns && make
+    cd /services && ln -s /etc/axfrdns
+    echo "Check your AXFR with:"
+    echo "dig axfr +tcp @$MYADDR my.domain.foo"
+fi
 
-mkdir -p /etc/dns && cd /etc/dns
 echo "checkout gitson"
+cd /etc/dns/
 git clone https://github.com/comotion/gitson
 
+# auto-pull DNS zones and update the servers published records
 cat > /etc/cron.d/gitson << EOF
 # m h dom mon dow user  command
 */5 *   * * *   root    cd /etc/dns && make
 
 EOF
 
-ln -s /etc/dns/gitson/gitson /etc/dns/gitson
+# symlinks to help humans find the files
+ln -s /etc/dns/gitson/gitson /etc/dns/gitson.sh
+mkdir -p zones
 ln -s /etc/dns/zones /etc/dns/gitson/zones
 
-echo "checkout your dns repos"
+[ -z "$REPOS" ] && echo "checkout your record repos into /etc/dns/zones"
 cd zones
 for repo in $REPOS
 do
     git clone $repo
 done
+
+[ -f /etc/dns/Makefile ] || cat >> /etc/dns/Makefile << EOF
+data: gitson
+
+gitson:
+    @./gitson/gitson
+
+data.cdb: data
+    /usr/local/bin/tinydns-data
+
+.PHONY: gitson
+EOF
 
