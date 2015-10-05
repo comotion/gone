@@ -85,7 +85,7 @@ sed -i 's/maild.full_subject=1/maild.full_subject=0/g' etc/internal_options.conf
 ( ./install.sh ) 
 
 cd $workdir
-if [ -f /etc/systemd ]
+if [ -d /etc/systemd ]
 then
     cat > ossec.service << EOF
 [Unit]
