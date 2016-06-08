@@ -47,14 +47,15 @@ getent passwd ossecr || useradd -g ossec -u 1516 -s /bin/false -d /var/ossec oss
 
 
 MAJ_VER=2.8.3
-SOURCE=http://www.ossec.net/files
+SOURCE=https://bintray.com/artifact/download/ossec/ossec-hids
 PKG=ossec-hids-${MAJ_VER}
 workdir=$PWD
-
+SUMS=https://raw.githubusercontent.com/ossec/ossec-docs/master/docs/whatsnew/checksums/
 set -x
 mkdir -p inst
 cd inst
-curl -s $SOURCE/${PKG%latest}-checksum.txt | grep 'SHA1.*gz' | sed 's/hids.*tar.gz/hids-latest.tar.gz/' | tail -n 1 > ossec-hids-latest_sum.txt
+
+curl -s $SUMS/$MAJ_VER/${PKG}.tar.gz.sha256 | grep 'SHA256.*gz' | sed 's/hids.*tar.gz/hids-latest.tar.gz/' | tail -n 1 > ossec-hids-latest_sum.txt
 if [ -f ossec-hids-sum.txt ] && diff -q ossec-hids-sum.txt ossec-hids-latest_sum.txt && [ -d /var/ossec ]
 then
    echo latest ossec already installed
@@ -62,7 +63,7 @@ then
 elif [ -z "`cat ossec-hids-latest_sum.txt`" ]
 then
    echo "couldn't get update, checking old download"
-   sha1sum -c ossec-hids-sum.txt || exit 0
+   sha256sum -c ossec-hids-sum.txt || exit 0
 else
    # Next run should have this file
     if [ -f ossec-hids-sum.txt ] && diff -q ossec-hids-sum.txt ossec-hids-latest_sum.txt
@@ -72,9 +73,9 @@ else
        echo "installing new version of ossec"
        cp ossec-hids-latest_sum.txt ossec-hids-sum.txt
        rm ossec-hids-latest.tar.gz
-       curl $SOURCE/${PKG}.tar.gz -o ossec-hids-latest.tar.gz
+       wget $SOURCE/${PKG}.tar.gz -O ossec-hids-latest.tar.gz
     fi
-   sha1sum -c ossec-hids-sum.txt || exit 0
+   sha256sum -c ossec-hids-sum.txt || exit 0
    tar xf ossec-hids-latest.tar.gz
 fi
 
