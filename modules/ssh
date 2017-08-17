@@ -24,12 +24,27 @@ cd /etc/ssh
 cp sshd_config sshd_config.$$
 
 # these are mostly supported
+# Sources:
+# - http://people.redhat.com/swells/mea/SECSCAN-FirstRun/sshd_config.htm
+# - http://wp.kjro.se/2013/09/06/hardening-your-ssh-server-opensshd_config
+# - http://kacper.blog.redpill-linpro.com/archives/702
+# - https://www.freebsd.org/cgi/man.cgi?sshd_config(5)
 sed -i \
--e 's/PermitRootLogin *yes.*/PermitRootLogin no/' \
--e 's/UsePrivilegeSeparation *no.*/UsePrivilegeSeparation yes/' \
--e 's/StrictModes *no.*/StrictModes yes/' \
--e 's/IgnoreRhosts *no.*/IgnoreRhosts yes/' \
--e 's/PermitEmptyPasswords *yes.*/PermitEmptyPasswords no/' \
+-e 's/#\?MaxAuthTries *[0-9]*.*/MaxAuthTries 2/' \
+-e 's/#\?PermitRootLogin *\(yes\|no\).*/PermitRootLogin no/' \
+-e 's/#\?UsePrivilegeSeparation *\(yes\|no\|sandbox\).*/UsePrivilegeSeparation sandbox/' \
+-e 's/#\?StrictModes *\(yes\|no\).*/StrictModes yes/' \
+-e 's/#\?IgnoreRhosts *\(yes\|no\).*/IgnoreRhosts yes/' \
+-e 's/#\?PermitEmptyPasswords *\(yes\|no\).*/PermitEmptyPasswords no/' \
+-e 's/#\?ChallengeResponseAuthentication *\(yes\|no\).*/ChallengeResponseAuthentication yes/' \
+-e 's/#\?KerberosAuthentication *\(yes\|no\).*/KerberosAuthentication no/' \
+-e 's/#\?GSSAPIAuthentication *\(yes\|no\).*/GSSAPIAuthentication no/' \
+-e 's/#\?GatewayPorts *\(yes\|no\).*/GatewayPorts no/' \
+-e 's/#\?X11Forwarding *\(yes\|no\).*/X11Forwarding no/' \
+-e 's/#\?PrintMotd *\(yes\|no\).*/PrintMotd no/' \
+-e 's/#\?PrintLastLog *\(yes\|no\).*/PrintLastLog yes/' \
+-e 's/#\?TCPKeepAlive *\(yes\|no\).*/TCPKeepAlive no/' \
+-e 's/#\?PermitUserEnvironment *\(yes\|no\).*/PermitUserEnvironment no/' \
 -e 's/^\(HostKey .*ssh_host_dsa_key\)/#\1/' \
 sshd_config
 
