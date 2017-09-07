@@ -52,8 +52,6 @@ sshd_config
 # -e 's/#\?X11Forwarding *\(yes\|no\).*/X11Forwarding no/' \
 # sshd_config
 
-Most of the improvements are sane, but sometimes X11 forwarding and gateway ports are used, so setting this as a global policy will get in the way.
-
 # should be this but curve25519 is not supported everywhere
 kexup='curve25519-sha256@libssh.org'
 
