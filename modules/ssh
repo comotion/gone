@@ -39,14 +39,20 @@ sed -i \
 -e 's/#\?ChallengeResponseAuthentication *\(yes\|no\).*/ChallengeResponseAuthentication yes/' \
 -e 's/#\?KerberosAuthentication *\(yes\|no\).*/KerberosAuthentication no/' \
 -e 's/#\?GSSAPIAuthentication *\(yes\|no\).*/GSSAPIAuthentication no/' \
--e 's/#\?GatewayPorts *\(yes\|no\).*/GatewayPorts no/' \
--e 's/#\?X11Forwarding *\(yes\|no\).*/X11Forwarding no/' \
 -e 's/#\?PrintMotd *\(yes\|no\).*/PrintMotd no/' \
 -e 's/#\?PrintLastLog *\(yes\|no\).*/PrintLastLog yes/' \
 -e 's/#\?TCPKeepAlive *\(yes\|no\).*/TCPKeepAlive no/' \
 -e 's/#\?PermitUserEnvironment *\(yes\|no\).*/PermitUserEnvironment no/' \
 -e 's/^\(HostKey .*ssh_host_dsa_key\)/#\1/' \
 sshd_config
+
+# If you don't use GatewayPorts or X11Forwarding, then uncomment the below 4 lines:
+# sed -i \
+# -e 's/#\?GatewayPorts *\(yes\|no\).*/GatewayPorts no/' \
+# -e 's/#\?X11Forwarding *\(yes\|no\).*/X11Forwarding no/' \
+# sshd_config
+
+Most of the improvements are sane, but sometimes X11 forwarding and gateway ports are used, so setting this as a global policy will get in the way.
 
 # should be this but curve25519 is not supported everywhere
 kexup='curve25519-sha256@libssh.org'
