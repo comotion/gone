@@ -46,39 +46,20 @@ getent passwd ossecm || useradd -g ossec -u 1515 -s /bin/false -d /var/ossec oss
 getent passwd ossecr || useradd -g ossec -u 1516 -s /bin/false -d /var/ossec ossecr
 
 
-MAJ_VER=2.8.3
-SOURCE=https://bintray.com/artifact/download/ossec/ossec-hids
-PKG=ossec-hids-${MAJ_VER}
+MAJ_VER=3.7.0
+https://github.com/ossec/ossec-hids/archive/3.7.0.tar.gz
+SOURCE=https://github.com/ossec/ossec-hids/archive/3.7.0.tar.gz
+PKG=${MAJ_VER}
 workdir=$PWD
 SUMS=https://raw.githubusercontent.com/ossec/ossec-docs/master/docs/whatsnew/checksums/
 set -x
 mkdir -p inst
 cd inst
 
+curl -s https://github.com/ossec/ossec-hids/releases/download/$MAJ_VER/ossec-hids-$MAJ_VER.tar.gz.asc
 curl -s $SUMS/$MAJ_VER/${PKG}.tar.gz.sha256 | grep 'SHA256.*gz' | sed 's/hids.*tar.gz/hids-latest.tar.gz/' | tail -n 1 > ossec-hids-latest_sum.txt
-if [ -f ossec-hids-sum.txt ] && diff -q ossec-hids-sum.txt ossec-hids-latest_sum.txt && [ -d /var/ossec ]
-then
-   echo latest ossec already installed
-   [ -n "$force" ] || exit 0
-elif [ -z "`cat ossec-hids-latest_sum.txt`" ]
-then
-   echo "couldn't get update, checking old download"
-   sha256sum -c ossec-hids-sum.txt || exit 0
-else
-   # Next run should have this file
-    if [ -f ossec-hids-sum.txt ] && diff -q ossec-hids-sum.txt ossec-hids-latest_sum.txt
-        then
-        echo "installing downloaded version of ossec"
-    else
-       echo "installing new version of ossec"
-       cp ossec-hids-latest_sum.txt ossec-hids-sum.txt
-       rm ossec-hids-latest.tar.gz
-       wget $SOURCE/${PKG}.tar.gz -O ossec-hids-latest.tar.gz
-    fi
-   sha256sum -c ossec-hids-sum.txt || exit 0
-   tar xf ossec-hids-latest.tar.gz
-fi
-
+wget $SOURCE -O ossec-hids-latest.tar.gz
+tar xvf ossec-hids-latest.tar.gz
 
 cd ossec-hids-$MAJ_VER
 # make setoneway setfullsubject
