@@ -52,6 +52,8 @@ sshd_config
 # -e 's/#\?X11Forwarding *\(yes\|no\).*/X11Forwarding no/' \
 # sshd_config
 
+# below filtering of hmac is based on https://unix.stackexchange.com/questions/338116/turning-separate-lines-into-a-comma-separated-list-with-quoted-entries/338124#338124
+
 # should be this but curve25519 is not supported everywhere
 kexup='curve25519-sha256@libssh.org'
 
@@ -59,11 +61,19 @@ kex='diffie-hellman-group-exchange-sha256'
 
 ciphers='aes256-ctr,aes192-ctr,aes128-ctr'
 ciphersup='chacha20-poly1305@openssh.com'
-macs='hmac-sha2-512,hmac-sha2-256,hmac-ripemd160'
-macsup='hmac-sha2-512-etm@openssh.com,hmac-sha2-256-etm@openssh.com,hmac-ripemd160-etm@openssh.com,umac-128-etm@openssh.com'
+# macs='hmac-sha2-512,hmac-sha2-256,hmac-ripemd160'
+macs=$(ssh -Q mac | grep -w 'hmac-sha2-512\|hmac-sha2-256,hmac-ripemd160' | paste -sd, -)
+# macsup='hmac-sha2-512-etm@openssh.com,hmac-sha2-256-etm@openssh.com,hmac-ripemd160-etm@openssh.com,umac-128-etm@openssh.com'
+macsup=$(ssh -Q mac | grep -w 'hmac-sha2-512-etm@openssh.com\|hmac-sha2-256-etm@openssh.com\|hmac-ripemd160-etm@openssh.com\|umac-128-etm@openssh.com' | paste -sd, -)
 macsend='umac-128@openssh.com'
 
-
+echo "kexup=$kexup"
+echo "kex=$kex"
+echo "ciphers=$ciphers"
+echo "ciphersup=$ciphersup"
+echo "macs=$macs"
+echo "macsup=$macsup"
+echo "macsend=$macsend"
 
 
 if [[ "$v" < "5.9" ]]
@@ -116,7 +126,17 @@ then
     cp sshd_config sshd_config.$$.new
     mv sshd_config.$$ sshd_config
 else
-    /etc/init.d/ssh reload
+    if [ -x /etc/init.d/ssh ]; then
+        /etc/init.d/ssh reload
+    else
+        if [ -x /usr/sbin/rcsshd ]; then
+            /usr/sbin/rcsshd restart
+        else
+            echo "cannot find a way to reload the sshd configuration; please reload it manually"
+        fi
+    fi
+    
+    echo
     echo "SSH reloaded. Please TEST your SSHD by making a new connection BEFORE disconnecting this session!" >&2
 fi
 
